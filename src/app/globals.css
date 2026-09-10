@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: #354136; border-radius: 2px; }
+
+/* ── Transições globais ────────────────────── */
+*, *::before, *::after { transition-property: color, background-color, border-color, opacity, transform; transition-duration: 150ms; transition-timing-function: ease; }
+
+/* ── Remoção de outline padrão em botões ───── */
+button:focus-visible,
+a:focus-visible { outline: 2px solid #4E7341; outline-offset: 2px; }
+
+/* ── Input de formulário ────────────────────── */
+.campo {
+  width: 100%;
+  background: #0E1510;
+  border: 1px solid #263829;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: #E8EDE7;
+  appearance: none;
+}
+.campo::placeholder { color: #435242; }
+.campo:focus { border-color: #4E7341; outline: none; }
+
+/* ── Divisor ornamental ────────────────────── */
+.divider-ornate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #3A4A39;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.divider-ornate::before,
+.divider-ornate::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #1E2D1F;
+}
+
+/* ── Botão primário ─────────────────────────── */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 20px;
+  background: #3A5630;
+  color: #E8EDE7;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 12px;
+  border: 1px solid #4A6A3F;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { background: #47683B; }
+.btn-primary:disabled { background: #1C2620; color: #3D4E3C; border-color: transparent; cursor: not-allowed; }
+
+/* ── Botão secundário ───────────────────────── */
+.btn-ghost {
+  font-size: 0.75rem;
+  color: #627060;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+}
+.btn-ghost:hover { color: #C47070; }
+
+/* ── Card base ──────────────────────────────── */
+.card {
+  background: #141C15;
+  border: 1px solid #202E22;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* ── Seção de formulário ────────────────────── */
+.form-section {
+  background: #141C15;
+  border: 1px solid #202E22;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* ── Tag de categoria ───────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ── Preço em destaque ──────────────────────── */
+.preco {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #C9A24F;
+}
