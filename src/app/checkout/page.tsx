@@ -4,14 +4,25 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
+import { brl } from '@/lib/format'
 import type { FormaPagamento } from '@/types/pizzaria'
-
-const brl = (v: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+import type { NovoPedidoPayload } from '@/types/pedido'
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { itens, observacao, setObservacao, subtotal, taxaEntrega, total, config, limparCarrinho } = useCart()
+  const {
+    itens,
+    observacao,
+    setObservacao,
+    subtotal,
+    taxaEntrega,
+    distanciaKm,
+    definirTaxaEntrega,
+    limparTaxaEntrega,
+    total,
+    config,
+    limparCarrinho,
+  } = useCart()
 
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
@@ -23,6 +34,42 @@ export default function CheckoutPage() {
   const [trocoPara, setTrocoPara] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [pedidoEnviado, setPedidoEnviado] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [codigoPedido, setCodigoPedido] = useState<string | null>(null)
+  const [calculandoFrete, setCalculandoFrete] = useState(false)
+  const [erroFrete, setErroFrete] = useState<string | null>(null)
+
+  const enderecoMudou = (atualizar: () => void) => {
+    limparTaxaEntrega()
+    setErroFrete(null)
+    atualizar()
+  }
+
+  const handleCalcularFrete = async () => {
+    if (!rua.trim() || !numero.trim() || !bairro.trim()) {
+      setErroFrete('Preencha rua, número e bairro antes de calcular o frete.')
+      return
+    }
+    setCalculandoFrete(true)
+    setErroFrete(null)
+    try {
+      const resp = await fetch('/api/frete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rua, numero, bairro }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        setErroFrete(data.error || 'Não foi possível calcular o frete.')
+        return
+      }
+      definirTaxaEntrega(data.taxaEntrega, data.distanciaKm)
+    } catch {
+      setErroFrete('Não foi possível calcular o frete. Verifique sua conexão e tente novamente.')
+    } finally {
+      setCalculandoFrete(false)
+    }
+  }
 
   // Carrinho vazio
   if (itens.length === 0 && !pedidoEnviado) {
@@ -63,7 +110,9 @@ export default function CheckoutPage() {
           </p>
 
           <div className="mt-6 rounded-xl bg-[#0E1510] border border-[#1C2920] p-4 text-left text-xs space-y-1.5">
-            <p className="font-semibold text-[#8AA087] mb-1 uppercase tracking-widest text-[10px]">Confirmação</p>
+            <p className="font-semibold text-[#8AA087] mb-1 uppercase tracking-widest text-[10px]">
+              Confirmação {codigoPedido && `· ${codigoPedido}`}
+            </p>
             <p className="text-[#C8D5C7]">{nome} · {telefone}</p>
             <p className="text-[#526550]">{rua}, {numero} — {bairro} {complemento && `(${complemento})`}</p>
             <p className="text-[#526550]">
@@ -84,17 +133,67 @@ export default function CheckoutPage() {
     )
   }
 
-  const handleFinalizar = (e: React.FormEvent) => {
+  const handleFinalizar = async (e: React.FormEvent) => {
     e.preventDefault()
     setErro(null)
 
     if (!nome.trim()) { setErro('Informe seu nome completo.'); return }
     if (!telefone.trim() || telefone.length < 8) { setErro('Informe um telefone válido.'); return }
     if (!rua.trim() || !numero.trim() || !bairro.trim()) { setErro('Preencha o endereço completo (Rua, Número e Bairro).'); return }
+    if (taxaEntrega === null) { setErro('Calcule o frete antes de enviar o pedido.'); return }
+
+    const payload: NovoPedidoPayload = {
+      cliente: { nome: nome.trim(), telefone: telefone.trim() },
+      endereco: { rua: rua.trim(), numero: numero.trim(), bairro: bairro.trim(), complemento: complemento.trim() },
+      pagamento: { forma: formaPagamento, trocoPara: trocoPara.trim() || undefined },
+      observacao: observacao.trim() || undefined,
+      itens: itens.map((item) =>
+        item.tipo === 'pizza'
+          ? {
+              tipo: 'pizza' as const,
+              tamanhoId: item.tamanho.id,
+              bordaId: item.borda.id,
+              saborIds: item.sabores.map((s) => s.id),
+              quantidade: item.quantidade,
+              precoUnitario: item.precoUnitario,
+            }
+          : {
+              tipo: 'bebida' as const,
+              bebidaId: item.bebida.id,
+              quantidade: item.quantidade,
+              precoUnitario: item.precoUnitario,
+            }
+      ),
+      subtotal,
+      taxaEntrega,
+    }
+
+    setEnviando(true)
+    let codigo: string
+    try {
+      const resp = await fetch('/api/pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        setErro(data.error || 'Não foi possível registrar o pedido.')
+        setEnviando(false)
+        return
+      }
+      codigo = data.codigo
+      setCodigoPedido(codigo)
+    } catch {
+      setErro('Falha de conexão. Verifique sua internet e tente novamente.')
+      setEnviando(false)
+      return
+    }
+    setEnviando(false)
 
     const foneLoja = config?.telefone_whats?.replace(/\D/g, '') || '5555992323508'
 
-    let msg = `🍕 *PEDIDO — AURELIA'S PIZZARIA*\n`
+    let msg = `🍕 *PEDIDO ${codigo} — AURELIA'S PIZZARIA*\n`
     msg += `———————————————\n\n`
     msg += `*CLIENTE*\n${nome.trim()} · ${telefone.trim()}\n\n`
     msg += `*ENTREGA*\n${rua.trim()}, Nº ${numero.trim()}\n${bairro.trim()}`
@@ -174,20 +273,48 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-6 gap-4">
                 <div className="col-span-4">
                   <label className="block text-xs text-[#4D6150] mb-1">Rua / Avenida <span className="text-[#8A5050]">*</span></label>
-                  <input type="text" required value={rua} onChange={(e) => setRua(e.target.value)} placeholder="Av. Brasil" className="campo" />
+                  <input type="text" required value={rua} onChange={(e) => enderecoMudou(() => setRua(e.target.value))} placeholder="Av. Brasil" className="campo" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs text-[#4D6150] mb-1">Número <span className="text-[#8A5050]">*</span></label>
-                  <input type="text" required value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="450" className="campo" />
+                  <input type="text" required value={numero} onChange={(e) => enderecoMudou(() => setNumero(e.target.value))} placeholder="450" className="campo" />
                 </div>
                 <div className="col-span-3">
                   <label className="block text-xs text-[#4D6150] mb-1">Bairro <span className="text-[#8A5050]">*</span></label>
-                  <input type="text" required value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Centro" className="campo" />
+                  <input type="text" required value={bairro} onChange={(e) => enderecoMudou(() => setBairro(e.target.value))} placeholder="Centro" className="campo" />
                 </div>
                 <div className="col-span-3">
                   <label className="block text-xs text-[#4D6150] mb-1">Complemento / Referência</label>
                   <input type="text" value={complemento} onChange={(e) => setComplemento(e.target.value)} placeholder="Apto 12, casa azul" className="campo" />
                 </div>
+              </div>
+
+              <div className="mt-4 rounded-xl bg-[#0E1510] border border-[#1C2920] p-4">
+                {taxaEntrega !== null ? (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#8AA087]">
+                      ✓ {distanciaKm?.toFixed(1)} km até o endereço — frete {brl(taxaEntrega)}
+                    </span>
+                    <button type="button" onClick={handleCalcularFrete} className="text-[#526550] underline cursor-pointer">
+                      Recalcular
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCalcularFrete}
+                      disabled={calculandoFrete}
+                      className="rounded-lg bg-[#3A5630] hover:bg-[#47683B] disabled:opacity-50 px-4 py-2 text-xs font-semibold text-white cursor-pointer"
+                    >
+                      {calculandoFrete ? 'Calculando frete...' : 'Calcular frete'}
+                    </button>
+                    <p className="mt-2 text-[11px] text-[#3D5040]">
+                      A taxa de entrega é calculada pela distância até o endereço informado.
+                    </p>
+                    {erroFrete && <p className="mt-2 text-[11px] text-[#C47070]">{erroFrete}</p>}
+                  </>
+                )}
               </div>
             </div>
 
@@ -294,7 +421,9 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Entrega</span>
-                  <span className="text-[#8AA087] tabular-nums">{brl(taxaEntrega)}</span>
+                  <span className="text-[#8AA087] tabular-nums">
+                    {taxaEntrega === null ? 'A calcular' : brl(taxaEntrega)}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-[#1A2318] pt-2 text-sm font-bold text-[#E0E8DF]">
                   <span>Total a pagar</span>
@@ -302,8 +431,12 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary">
-                Enviar pedido pelo WhatsApp
+              <button type="submit" disabled={taxaEntrega === null || enviando} className="btn-primary disabled:opacity-50">
+                {taxaEntrega === null
+                  ? 'Calcule o frete para continuar'
+                  : enviando
+                    ? 'Enviando pedido...'
+                    : 'Enviar pedido pelo WhatsApp'}
               </button>
               <p className="text-center text-[11px] text-[#2E4030]">
                 Mensagem enviada ao número oficial da Aurelia&apos;s Pizzaria.

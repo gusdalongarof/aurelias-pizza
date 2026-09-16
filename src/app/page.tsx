@@ -5,12 +5,10 @@ import MontadorPizza from '@/components/MontadorPizza'
 import SecaoBebidas from '@/components/SecaoBebidas'
 import CarrinhoDrawer from '@/components/CarrinhoDrawer'
 import CarrinhoBarraFlutuante from '@/components/CarrinhoBarraFlutuante'
+import { brl } from '@/lib/format'
 import type { Tamanho, Sabor, Borda, Bebida, Config } from '@/types/pizzaria'
 
 export const dynamic = 'force-dynamic'
-
-const brl = (v: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 
 export default async function Cardapio() {
   const [tamanhosRes, saboresRes, bordasRes, bebidasRes, configRes] = await Promise.all([
@@ -142,8 +140,7 @@ export default async function Cardapio() {
           </div>
 
           <p className="mt-14 text-center text-[11px] leading-relaxed text-[#3D5040]">
-            Pizzas de dois sabores têm o preço calculado pela média dos dois valores.
-            A broto aceita apenas um sabor.
+            Cada pizza leva um sabor só, em qualquer tamanho.
           </p>
         </div>
 

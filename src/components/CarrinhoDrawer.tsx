@@ -176,7 +176,9 @@ export default function CarrinhoDrawer() {
               </div>
               <div className="flex justify-between">
                 <span>Entrega</span>
-                <span className="text-[#C8D5C7] tabular-nums">{brl(taxaEntrega)}</span>
+                <span className="text-[#C8D5C7] tabular-nums">
+                  {taxaEntrega === null ? 'Calculada no checkout' : brl(taxaEntrega)}
+                </span>
               </div>
               <div className="flex justify-between border-t border-[#1A2318] pt-2 text-sm font-bold text-[#E0E8DF]">
                 <span>Total estimado</span>

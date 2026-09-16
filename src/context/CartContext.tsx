@@ -20,7 +20,10 @@ interface CartContextType {
   config: Config
   setConfig: (config: Config) => void
   subtotal: number
-  taxaEntrega: number
+  taxaEntrega: number | null
+  distanciaKm: number | null
+  definirTaxaEntrega: (taxaEntrega: number, distanciaKm: number) => void
+  limparTaxaEntrega: () => void
   total: number
   atingiuPedidoMinimo: boolean
   valorRestantePedidoMinimo: number
@@ -31,6 +34,8 @@ const configPadrao: Config = {
   aberta: true,
   pedido_minimo: 30,
   taxa_entrega_padrao: 8,
+  taxa_entrega_por_km: 0,
+  endereco_loja: null,
   aviso_entrega: 'Entregamos no perímetro urbano.',
   telefone_whats: '5555992323508',
 }
@@ -48,6 +53,8 @@ export function CartProvider({
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [observacao, setObservacao] = useState('')
   const [config, setConfig] = useState<Config>(configInicial || configPadrao)
+  const [taxaEntrega, setTaxaEntrega] = useState<number | null>(null)
+  const [distanciaKm, setDistanciaKm] = useState<number | null>(null)
 
   // Atualiza config se vier nova prop
   useEffect(() => {
@@ -150,6 +157,18 @@ export function CartProvider({
   const limparCarrinho = () => {
     setItens([])
     setObservacao('')
+    setTaxaEntrega(null)
+    setDistanciaKm(null)
+  }
+
+  const definirTaxaEntrega = (novaTaxa: number, novaDistanciaKm: number) => {
+    setTaxaEntrega(novaTaxa)
+    setDistanciaKm(novaDistanciaKm)
+  }
+
+  const limparTaxaEntrega = () => {
+    setTaxaEntrega(null)
+    setDistanciaKm(null)
   }
 
   const abrirCarrinho = () => setIsCartOpen(true)
@@ -157,11 +176,10 @@ export function CartProvider({
 
   // Cálculos
   const subtotal = itens.reduce((acc, item) => acc + item.precoUnitario * item.quantidade, 0)
-  const taxaEntrega = config?.taxa_entrega_padrao ?? 8
   const pedidoMinimo = config?.pedido_minimo ?? 30
   const atingiuPedidoMinimo = subtotal >= pedidoMinimo
   const valorRestantePedidoMinimo = Math.max(0, pedidoMinimo - subtotal)
-  const total = subtotal > 0 ? subtotal + taxaEntrega : 0
+  const total = subtotal > 0 ? subtotal + (taxaEntrega ?? 0) : 0
   const quantidadeTotal = itens.reduce((acc, item) => acc + item.quantidade, 0)
 
   return (
@@ -184,6 +202,9 @@ export function CartProvider({
         setConfig,
         subtotal,
         taxaEntrega,
+        distanciaKm,
+        definirTaxaEntrega,
+        limparTaxaEntrega,
         total,
         atingiuPedidoMinimo,
         valorRestantePedidoMinimo,

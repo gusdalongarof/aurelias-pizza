@@ -36,7 +36,10 @@ export type Config = {
   id?: number
   aberta: boolean
   pedido_minimo: number
+  /** @deprecated sem uso — entrega agora é calculada por distância, ver taxa_entrega_por_km */
   taxa_entrega_padrao: number
+  taxa_entrega_por_km: number
+  endereco_loja: string | null
   aviso_entrega: string | null
   telefone_whats?: string | null
   regra_meio_a_meio?: string | null
