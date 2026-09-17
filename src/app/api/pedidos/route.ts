@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
   const { data: pedido, error: pedidoError } = await supabaseAdmin
     .from('pedidos')
     .insert({
+      codigo: `TMP${Math.random().toString(36).slice(2, 9)}`,
       cliente_nome: cliente.nome.trim(),
       cliente_fone: cliente.telefone.trim(),
       tipo_entrega: 'entrega',
