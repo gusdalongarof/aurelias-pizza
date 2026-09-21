@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import type { Config } from '@/types/pizzaria'
 import { useCart } from '@/context/CartContext'
 
@@ -24,20 +25,28 @@ export default function Header({ config }: HeaderProps) {
           {config.aberta ? '● Aberto agora' : '○ Fechado no momento'}
         </span>
 
-        <button
-          type="button"
-          onClick={abrirCarrinho}
-          className="flex items-center gap-2 rounded-full border border-[#253228] bg-[#131A14] px-4 py-1.5 text-xs text-[#C8D5C7] hover:border-[#3A5230] hover:bg-[#182019] cursor-pointer"
-        >
-          <svg className="h-4 w-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-          {quantidadeTotal > 0
-            ? <span><span className="font-bold text-[#C9A24F]">{quantidadeTotal}</span> {quantidadeTotal === 1 ? 'item' : 'itens'} · {brl(subtotal)}</span>
-            : <span>Carrinho</span>
-          }
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/pedido"
+            className="text-xs text-[#4D6150] hover:text-[#8AA087] transition-colors"
+          >
+            Acompanhar pedido
+          </Link>
+          <button
+            type="button"
+            onClick={abrirCarrinho}
+            className="flex items-center gap-2 rounded-full border border-[#253228] bg-[#131A14] px-4 py-1.5 text-xs text-[#C8D5C7] hover:border-[#3A5230] hover:bg-[#182019] cursor-pointer"
+          >
+            <svg className="h-4 w-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            {quantidadeTotal > 0
+              ? <span><span className="font-bold text-[#C9A24F]">{quantidadeTotal}</span> {quantidadeTotal === 1 ? 'item' : 'itens'} · {brl(subtotal)}</span>
+              : <span>Carrinho</span>
+            }
+          </button>
+        </div>
       </div>
 
       {/* Identidade central */}

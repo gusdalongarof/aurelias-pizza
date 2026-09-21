@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { brl, formatDataHora } from '@/lib/format'
+import { STATUS_LABEL, STATUS_COR } from '@/lib/status-pedido'
 import type { Pedido, PedidoStatus } from '@/types/pedido'
 
 const PROXIMO_STATUS: Partial<Record<PedidoStatus, { status: PedidoStatus; label: string }>> = {
@@ -9,24 +10,6 @@ const PROXIMO_STATUS: Partial<Record<PedidoStatus, { status: PedidoStatus; label
   aceito: { status: 'em_preparo', label: 'Iniciar preparo' },
   em_preparo: { status: 'saiu_entrega', label: 'Saiu para entrega' },
   saiu_entrega: { status: 'entregue', label: 'Marcar como entregue' },
-}
-
-const STATUS_LABEL: Record<PedidoStatus, string> = {
-  novo: 'Novo',
-  aceito: 'Aceito',
-  em_preparo: 'Em preparo',
-  saiu_entrega: 'Saiu para entrega',
-  entregue: 'Entregue',
-  recusado: 'Recusado',
-}
-
-const STATUS_COR: Record<PedidoStatus, string> = {
-  novo: 'bg-[#3A5630] text-white',
-  aceito: 'bg-[#2E4030] text-[#C8D5C7]',
-  em_preparo: 'bg-[#4A3A1A] text-[#E5C07B]',
-  saiu_entrega: 'bg-[#1A3A4A] text-[#7BB8E5]',
-  entregue: 'bg-[#192519] text-[#6A9960]',
-  recusado: 'bg-[#281A1A] text-[#C47070]',
 }
 
 export default function PedidoCard({

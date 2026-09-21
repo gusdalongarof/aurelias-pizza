@@ -121,10 +121,19 @@ export default function CheckoutPage() {
             <p className="pt-2 font-bold preco">{brl(total)}</p>
           </div>
 
+          {codigoPedido && (
+            <Link
+              href={`/pedido/${codigoPedido}`}
+              className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-[#2E4030] px-6 py-3 text-sm font-semibold text-[#8AA087] hover:border-[#4A6A3F] hover:text-[#C8D5C7]"
+            >
+              Acompanhar pedido
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={() => { limparCarrinho(); router.push('/') }}
-            className="btn-primary mt-7"
+            className="btn-primary mt-3"
           >
             Voltar ao Cardápio
           </button>

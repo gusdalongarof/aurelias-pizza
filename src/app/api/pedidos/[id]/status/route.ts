@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { ORDEM_STATUS } from '@/lib/status-pedido'
 import type { PedidoStatus } from '@/types/pedido'
-
-const ORDEM: PedidoStatus[] = ['novo', 'aceito', 'em_preparo', 'saiu_entrega', 'entregue']
 
 function transicaoValida(atual: PedidoStatus, proximo: PedidoStatus) {
   if (proximo === 'recusado') {
     return atual !== 'entregue' && atual !== 'recusado'
   }
-  const indiceAtual = ORDEM.indexOf(atual)
-  const indiceProximo = ORDEM.indexOf(proximo)
+  const indiceAtual = ORDEM_STATUS.indexOf(atual)
+  const indiceProximo = ORDEM_STATUS.indexOf(proximo)
   return indiceAtual !== -1 && indiceProximo === indiceAtual + 1
 }
 

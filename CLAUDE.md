@@ -22,9 +22,11 @@ recebe os pedidos num painel e atualiza o status.
 - Quatro clientes Supabase, cada um com seu uso:
   - `src/lib/supabase.ts` — chave publishable (anon), leitura pública de
     catálogo/config.
-  - `src/lib/supabase-admin.ts` — `service_role`, server-only, ignora RLS. Só
-    usado por `POST /api/pedidos` (gravação do pedido feita pelo checkout,
-    fluxo sem login).
+  - `src/lib/supabase-admin.ts` — `service_role`, server-only, ignora RLS.
+    Usado por `POST /api/pedidos` (gravação do pedido feita pelo checkout,
+    fluxo sem login) e pelo rastreio público de pedido (`/pedido/[codigo]` e
+    `GET /api/pedidos/rastrear/[codigo]`), já que `anon` não tem policy de
+    SELECT em `pedidos` — ver seção "Rastreio público de pedido".
   - `src/lib/supabase-server.ts` / `src/lib/supabase-browser.ts` — sessão do
     usuário logado (via `@supabase/ssr`), usados pelo painel do dono
     (`/painel`). Respeitam RLS pela sessão, não têm privilégio de
@@ -135,6 +137,34 @@ pedidos têm cada um sua conta.
   pedido" abaixo).
 - Contas de login **não existem ainda** — ver Pendências.
 
+## Rastreio público de pedido
+
+Implementado em 2026-09-21. Rota `/pedido/[codigo]` (sem login) — o cliente
+acompanha o status do próprio pedido pelo `codigo` (ex: `PED-00001`) recebido
+na tela de confirmação do checkout. `/pedido` (sem código) é uma tela de
+busca simples que redireciona para `/pedido/[codigo]`. Também linkado no
+Header ("Acompanhar pedido") e na confirmação do checkout.
+
+- Como `anon` não tem policy de SELECT em `pedidos` (ver seção RLS), tanto a
+  Server Component (`src/app/pedido/[codigo]/page.tsx`) quanto a rota
+  `GET /api/pedidos/rastrear/[codigo]/route.ts` (usada pelo polling) leem via
+  `supabase-admin` (`service_role`), não pela sessão do usuário — não existe
+  sessão nesse fluxo.
+- **`codigo` é sequencial e previsível** (`PED-` + id com padding), não é um
+  token secreto — qualquer um pode tentar adivinhar um código válido. Por
+  isso a query de rastreio (`src/lib/pedido-select.ts`, `SELECT_RASTREIO`)
+  deliberadamente **não** expõe `cliente_fone`, `endereco`, `bairro`,
+  `observacao`, `forma_pagamento` nem `troco_para` — só `codigo`, `status`,
+  `criado_em`, itens e `total`. Se algum dia precisar expor mais dados aqui,
+  trocar `codigo` por um token não sequencial primeiro.
+- Sem Realtime nesse fluxo (Realtime respeita RLS, e `anon` não tem policy).
+  `src/components/RastreioPedido.tsx` faz **polling a cada 10s** em vez de
+  assinar `postgres_changes`.
+- Labels/cores de status (`STATUS_LABEL`, `STATUS_COR`) e a ordem da máquina
+  de estados (`ORDEM_STATUS`) foram extraídos para `src/lib/status-pedido.ts`
+  e são compartilhados entre o painel (`PedidoCard.tsx`), a validação de
+  transição (`api/pedidos/[id]/status/route.ts`) e o rastreio público.
+
 ## WhatsApp
 
 MVP usa link `wa.me` — o site monta o texto e redireciona; o cliente aperta
@@ -193,4 +223,6 @@ tratar como referência até resolver a pendência 1 abaixo.
 4. Checkout e gravação do pedido — **feito**
 5. Painel do dono: login, lista em tempo real, alerta sonoro, fluxo de status
    — **feito** (falta só criar as contas de login — pendência 4 acima)
-6. CRUD de cardápio, horário de funcionamento, página pública de acompanhamento
+6. CRUD de cardápio, horário de funcionamento — pendente. Página pública de
+   acompanhamento (`/pedido/[codigo]`) — **feito**, ver seção "Rastreio
+   público de pedido" acima.

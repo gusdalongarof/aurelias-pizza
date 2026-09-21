@@ -47,6 +47,15 @@ export type Pedido = {
   pedido_itens: PedidoItem[]
 }
 
+/** Retorno de GET /api/pedidos/rastrear/[codigo] — subconjunto público e não sensível de Pedido. */
+export type PedidoRastreio = {
+  codigo: string
+  status: PedidoStatus
+  criado_em: string
+  total: number
+  pedido_itens: PedidoItem[]
+}
+
 export type NovoPedidoItemPayload =
   | {
       tipo: 'pizza'
