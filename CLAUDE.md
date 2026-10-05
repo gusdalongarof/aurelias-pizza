@@ -135,7 +135,7 @@ pedidos têm cada um sua conta.
 - Transição de status é validada no servidor, não só documentada:
   `src/app/api/pedidos/[id]/status/route.ts` (ver seção "Status de status do
   pedido" abaixo).
-- Contas de login **não existem ainda** — ver Pendências.
+- Contas de login existem (2, criadas em 2026-09-16) — ver Pendências.
 
 ## Impressão de cupom
 
@@ -233,8 +233,13 @@ tratar como referência até resolver a pendência 1 abaixo.
    service_role secret. Não é recuperável via ferramentas automatizadas, só
    colando manualmente. Sem ela, `POST /api/pedidos` (gravação do pedido)
    falha.
-4. Criar as 2 contas de login do painel (dono + amigo) no Supabase Auth —
-   `auth.users` está vazio. Não bloqueia o código, bloqueia o uso do painel.
+4. ~~Contas de login do painel~~ — **resolvido**: `auth.users` tem 2 contas
+   confirmadas (conferido em 2026-10-05). O dono é amigo do Gustavo, então
+   não há uma terceira conta separada. A conta do dono ainda não tinha feito
+   nenhum login até essa data.
+5. Projeto Supabase no plano gratuito **pausa após ~7 dias sem uso** — já
+   pausou uma vez (restaurado em 2026-10-05 sem perda de dados). Antes de ir
+   para produção, garantir uso regular ou plano pago.
 
 ## Fases
 

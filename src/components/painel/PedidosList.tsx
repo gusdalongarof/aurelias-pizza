@@ -18,6 +18,30 @@ const SELECT_PEDIDO = `
   )
 `
 
+// POST /api/pedidos grava em vários passos (pedido com código TMP → código
+// PED- → itens → sabores → histórico), e o Realtime avisa já no primeiro.
+// O registro em pedido_status_hist é o último passo: só com ele o pedido
+// está completo para mostrar e imprimir. Retorna null se o pedido sumir
+// (a rota apaga em caso de falha) ou não completar a tempo.
+async function buscarPedidoCompleto(id: number): Promise<Pedido | null> {
+  for (let tentativa = 0; tentativa < 20; tentativa++) {
+    const { data, error } = await supabaseBrowser
+      .from('pedidos')
+      .select(`${SELECT_PEDIDO}, pedido_status_hist ( id )`)
+      .eq('id', id)
+      .maybeSingle()
+
+    if (!error && !data) return null
+    if (data && data.pedido_status_hist.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { pedido_status_hist, ...pedido } = data
+      return pedido as unknown as Pedido
+    }
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  return null
+}
+
 const CHAVE_IMPRESSAO_AUTO = 'painel:impressao-auto'
 const ouvintesImpressao = new Set<() => void>()
 
@@ -69,21 +93,15 @@ export default function PedidosList({ pedidosIniciais }: { pedidosIniciais: Pedi
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'pedidos' },
         async (payload) => {
-          const { data } = await supabaseBrowser
-            .from('pedidos')
-            .select(SELECT_PEDIDO)
-            .eq('id', payload.new.id)
-            .single()
-
-          if (data) {
-            const pedido = data as unknown as Pedido
+          const pedido = await buscarPedidoCompleto(payload.new.id)
+          if (pedido) {
             setPedidos((prev) => [pedido, ...prev])
             if (impressaoAutoRef.current && !impressosRef.current.has(pedido.id)) {
               impressosRef.current.add(pedido.id)
               imprimirCupom(pedido)
             }
+            if (somAtivoRef.current) tocarBeep()
           }
-          if (somAtivoRef.current) tocarBeep()
         }
       )
       .on(
