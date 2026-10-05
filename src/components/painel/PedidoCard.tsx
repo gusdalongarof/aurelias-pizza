@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { brl, formatDataHora } from '@/lib/format'
 import { STATUS_LABEL, STATUS_COR } from '@/lib/status-pedido'
+import { imprimirCupom } from '@/lib/cupom-pedido'
 import type { Pedido, PedidoStatus } from '@/types/pedido'
 
 const PROXIMO_STATUS: Partial<Record<PedidoStatus, { status: PedidoStatus; label: string }>> = {
@@ -62,7 +63,12 @@ export default function PedidoCard({
             {pedido.cliente_fone} · {formatDataHora(pedido.criado_em)}
           </p>
         </div>
-        <span className={`tag ${STATUS_COR[pedido.status]}`}>{STATUS_LABEL[pedido.status]}</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`tag ${STATUS_COR[pedido.status]}`}>{STATUS_LABEL[pedido.status]}</span>
+          <button type="button" onClick={() => imprimirCupom(pedido)} className="btn-ghost">
+            🖨️ Imprimir
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-[#8AA087]">

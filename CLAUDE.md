@@ -137,6 +137,27 @@ pedidos têm cada um sua conta.
   pedido" abaixo).
 - Contas de login **não existem ainda** — ver Pendências.
 
+## Impressão de cupom
+
+Implementado em 2026-10-05. Impressora térmica **Oásis OIA-8388** (80mm),
+ligada no PC Windows do amigo, que fica com o `/painel` sempre aberto.
+
+- `src/lib/cupom-pedido.ts` monta o cupom em HTML (largura útil 72mm) e
+  imprime por um iframe oculto com `window.print()`. Não é ESC/POS direto.
+- Em `PedidosList.tsx`, o checkbox "Imprimir cupom automaticamente" é
+  **por computador** (`localStorage`, chave `painel:impressao-auto`). Só o PC
+  da térmica deve ligar. No INSERT via Realtime, imprime uma vez por id.
+- Cada `PedidoCard` tem botão "Imprimir" para reimpressão manual.
+- Para imprimir sem o diálogo do Chrome, o atalho do Chrome nesse PC precisa
+  de `--kiosk-printing`, e a OIA-8388 precisa ser a impressora padrão do
+  Windows (com o papel configurado para 80mm no driver).
+- **Driver:** a Oásis não publica driver da OIA-8388. Funciona com o driver
+  genérico **POS-80 11.3.0.0** (o mesmo publicado como "OASIS OIA-8371 80MM"
+  em downloads.hubos.com.br). Testado em 2026-10-05: o cupom saiu certo.
+  **Não usar "Generic / Text Only"** — com ele o Chrome não imprime o cupom.
+- Se o painel estiver aberto em duas abas nesse PC com o checkbox ligado,
+  imprime duas vezes. Deixar uma aba só.
+
 ## Rastreio público de pedido
 
 Implementado em 2026-09-21. Rota `/pedido/[codigo]` (sem login) — o cliente
