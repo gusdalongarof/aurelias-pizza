@@ -179,7 +179,8 @@ pedidos têm cada um sua conta.
   sessão, não service_role). Fechar pede confirmação. Com a loja fechada,
   o Header mostra "Fechado no momento", o site bloqueia o pedido no front
   (ver "Regras de negócio") e `POST /api/pedidos` recusa o pedido.
-- Contas de login existem (2, criadas em 2026-09-16) — ver Pendências.
+- Contas de login: 2 — a do Gustavo (2026-09-16) e a do dono (recriada pelo
+  Gustavo em 2026-10-07) — ver Pendências.
 - **Esqueci minha senha** (2026-10-07): link em `/painel/login` →
   `/painel/esqueci-senha` (`EsqueciSenhaForm.tsx`,
   `resetPasswordForEmail` com `redirectTo` = `<origin>/auth/confirm?next=/painel/nova-senha`)
@@ -204,9 +205,12 @@ pedidos têm cada um sua conta.
   O site não tem tela de cadastro, mas a API do Supabase aceita `signUp` com
   a chave anon, e qualquer conta confirmada vira `authenticated` — que pelo
   RLS lê todos os pedidos (com telefone e endereço dos clientes), muda
-  status e abre/fecha a loja. Em 2026-10-07 estava **ligado**
-  (`disable_signup: false` em `/auth/v1/settings`), ainda só com as 2
-  contas legítimas. Conferir com
+  status e abre/fecha a loja. Estava ligado até 2026-10-07, quando o Gustavo
+  desligou — conferido em seguida: `disable_signup: true` em
+  `/auth/v1/settings`. Nessa conferência `auth.users` tinha 2 contas: a do
+  Gustavo (2026-09-16) e uma `san…@hotmail.com` criada em 2026-10-07 22:13
+  UTC pelo próprio Gustavo no dashboard ("Add user"), substituindo a outra
+  conta de 2026-09-16, que ele apagou. Conferir com
   `curl $NEXT_PUBLIC_SUPABASE_URL/auth/v1/settings -H "apikey: <anon>"`.
   Contas novas, se precisar: criar pelo dashboard (Authentication → Users →
   Add user), que funciona com o cadastro desligado.
@@ -344,8 +348,9 @@ não tratar como referência até resolver a pendência 1 abaixo.
    (Vercel, iad1) grava com a chave secreta.
 4. ~~Contas de login do painel~~ — **resolvido**: `auth.users` tem 2 contas
    confirmadas (conferido em 2026-10-05). O dono é amigo do Gustavo, então
-   não há uma terceira conta separada. A conta do dono ainda não tinha feito
-   nenhum login até essa data.
+   não há uma terceira conta separada. Em 2026-10-07 o Gustavo apagou a conta
+   antiga do dono (nunca tinha feito login) e criou outra pelo dashboard —
+   ainda sem login nessa data.
 5. Projeto Supabase no plano gratuito **pausa após ~7 dias sem uso** — já
    pausou uma vez (restaurado em 2026-10-05 sem perda de dados). Antes de ir
    para produção, garantir uso regular ou plano pago.
