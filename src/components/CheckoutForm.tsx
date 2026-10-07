@@ -89,10 +89,10 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
             ✓
           </div>
           <h1 className="text-xl font-bold text-[#D0D8D0]" style={{ fontFamily: 'var(--font-serif)' }}>
-            Pedido enviado
+            Pedido recebido
           </h1>
           <p className="mt-2 text-sm text-[#3D5040]">
-            Sua comanda foi enviada para o WhatsApp da Aurelia&apos;s Pizzaria. Em breve nossa equipe confirma!
+            A Aurelia&apos;s Pizzaria já recebeu seu pedido. Acompanhe o andamento pelo botão abaixo.
           </p>
 
           <div className="mt-6 rounded-xl bg-[#0E1510] border border-[#1C2920] p-4 text-left text-xs space-y-1.5">
@@ -167,8 +167,6 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
     }
 
     setEnviando(true)
-    let codigo: string
-    let final: { total: number; desconto: number; taxaEntrega: number }
     try {
       const resp = await fetch('/api/pedidos', {
         method: 'POST',
@@ -178,55 +176,17 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
       const data = await resp.json()
       if (!resp.ok) {
         setErro(data.error || 'Não foi possível registrar o pedido.')
-        setEnviando(false)
         return
       }
-      codigo = data.codigo
-      // Valores gravados pelo servidor (ele é quem decide frete grátis/desconto).
-      final = { total: data.total, desconto: data.desconto, taxaEntrega: data.taxaEntrega }
-      setCodigoPedido(codigo)
+      // Total gravado pelo servidor (ele é quem decide frete grátis/desconto).
+      setCodigoPedido(data.codigo)
       setTotalFinal(data.total)
+      setPedidoEnviado(true)
     } catch {
       setErro('Falha de conexão. Verifique sua internet e tente novamente.')
+    } finally {
       setEnviando(false)
-      return
     }
-    setEnviando(false)
-
-    const foneLoja = config?.telefone_whats?.replace(/\D/g, '') || '5555992323508'
-
-    let msg = `🍕 *PEDIDO ${codigo} — AURELIA'S PIZZARIA*\n`
-    msg += `———————————————\n\n`
-    msg += `*CLIENTE*\n${nome.trim()} · ${telefone.trim()}\n\n`
-    msg += `*ENTREGA*\n${rua.trim()}, Nº ${numero.trim()}\n${nomeBairro}`
-    if (complemento.trim()) msg += ` — ${complemento.trim()}`
-    msg += `\n\n`
-    msg += `*PAGAMENTO*\n`
-    if (formaPagamento === 'pix') msg += `Pix\n`
-    else if (formaPagamento === 'cartao') msg += `Cartão (Débito/Crédito na entrega)\n`
-    else msg += `Dinheiro${trocoPara ? ` — troco para ${trocoPara}` : ''}\n`
-    msg += `\n`
-
-    if (observacao.trim()) msg += `*OBSERVAÇÕES*\n"${observacao.trim()}"\n\n`
-
-    msg += `*ITENS DO PEDIDO*\n`
-    itens.forEach((item) => {
-      if (item.tipo === 'pizza') {
-        const sb = item.sabores.map((s) => item.sabores.length > 1 ? `½ ${s.nome}` : s.nome).join(' + ')
-        msg += `• ${item.quantidade}× Pizza ${item.tamanho.nome} — ${sb}\n  Borda: ${item.borda.nome} · ${brl(item.precoUnitario * item.quantidade)}\n`
-      } else {
-        msg += `• ${item.quantidade}× ${item.bebida.nome}${item.bebida.volume ? ` (${item.bebida.volume})` : ''} · ${brl(item.precoUnitario * item.quantidade)}\n`
-      }
-    })
-
-    msg += `———————————————\n`
-    msg += `Subtotal: ${brl(subtotal)}\n`
-    if (final.desconto > 0) msg += `Desconto: -${brl(final.desconto)}\n`
-    msg += `Entrega: ${final.taxaEntrega === 0 && freteGratis ? 'grátis' : brl(final.taxaEntrega)}\n*TOTAL: ${brl(final.total)}*\n\n`
-    msg += `Olá! Gostaria de confirmar o pedido acima. Obrigado!`
-
-    window.open(`https://wa.me/${foneLoja}?text=${encodeURIComponent(msg)}`, '_blank')
-    setPedidoEnviado(true)
   }
 
   return (
@@ -321,7 +281,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
               </h2>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'pix', label: 'Pix', sub: 'Chave enviada pelo WhatsApp' },
+                  { id: 'pix', label: 'Pix', sub: 'Pagamento via Pix' },
                   { id: 'cartao', label: 'Cartão', sub: 'Débito ou crédito na entrega' },
                   { id: 'dinheiro', label: 'Dinheiro', sub: 'Pagamento em espécie' },
                 ].map((op) => {
@@ -438,11 +398,8 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                   ? 'Escolha o bairro para continuar'
                   : enviando
                     ? 'Enviando pedido...'
-                    : 'Enviar pedido pelo WhatsApp'}
+                    : 'Finalizar pedido'}
               </button>
-              <p className="text-center text-[11px] text-[#2E4030]">
-                Mensagem enviada ao número oficial da Aurelia&apos;s Pizzaria.
-              </p>
             </div>
           </div>
         </form>

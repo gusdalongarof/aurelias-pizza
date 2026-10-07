@@ -1,8 +1,9 @@
 # Sistema de pedidos — Pizzaria
 
 Site de pedidos para uma pizzaria em Santa Rosa/RS. O cliente monta o pedido,
-finaliza o checkout e é encaminhado ao WhatsApp com o resumo pronto. O dono
-recebe os pedidos num painel e atualiza o status.
+finaliza o checkout e recebe um código para acompanhar o pedido. O dono
+recebe os pedidos num painel (com alerta sonoro e cupom impresso) e atualiza
+o status.
 
 ## Stack
 
@@ -227,17 +228,17 @@ Header ("Acompanhar pedido") e na confirmação do checkout.
 
 ## WhatsApp
 
-MVP usa link `wa.me` — o site monta o texto e redireciona; o cliente aperta
-enviar. Número em `config_loja.telefone_whats`. A mensagem inclui o `codigo`
-do pedido, já gravado no banco antes de montar o link (`POST /api/pedidos`
-roda primeiro, em `src/app/checkout/page.tsx`).
+**Removido do checkout em 2026-10-07**, a pedido do Gustavo. Antes o checkout
+abria um link `wa.me` com o resumo do pedido; agora ele só grava
+(`POST /api/pedidos`) e mostra a confirmação com o `codigo` e o link
+"Acompanhar pedido". O pedido chega à loja pelo painel (Realtime + beep +
+impressão), não por mensagem.
 
-A URL tem limite prático de tamanho: mandar só o resumo e o link de
-acompanhamento, nunca o pedido detalhado inteiro.
-
-A WhatsApp Cloud API (mensagens automáticas de status) fica para depois, quando
-o volume justificar. Exige conta Meta verificada, número dedicado e templates
-aprovados.
+- `config_loja.telefone_whats` ficou sem uso no checkout.
+- Mensagens de erro ainda dizem "fale com a loja pelo WhatsApp" como contato
+  alternativo — é só texto, não há link.
+- A WhatsApp Cloud API (mensagens automáticas de status) segue como ideia
+  futura. Exige conta Meta verificada, número dedicado e templates aprovados.
 
 ## Status de status do pedido
 
@@ -267,11 +268,9 @@ não tratar como referência até resolver a pendência 1 abaixo.
 1. Valor real do pedido mínimo
 2. ~~Chave `GOOGLE_MAPS_API_KEY`~~ — **descartado** em 2026-10-06; entrega
    passou a ser por bairro
-3. Configurar `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` e na Vercel
-   (produção) — pegar em Supabase Dashboard → Project Settings → API →
-   service_role secret. Não é recuperável via ferramentas automatizadas, só
-   colando manualmente. Sem ela, `POST /api/pedidos` (gravação do pedido)
-   falha.
+3. ~~`SUPABASE_SERVICE_ROLE_KEY` na Vercel~~ — **resolvido**: conferido em
+   2026-10-07 pelos logs do Supabase que `POST /api/pedidos` em produção
+   (Vercel, iad1) grava com a chave secreta.
 4. ~~Contas de login do painel~~ — **resolvido**: `auth.users` tem 2 contas
    confirmadas (conferido em 2026-10-05). O dono é amigo do Gustavo, então
    não há uma terceira conta separada. A conta do dono ainda não tinha feito
