@@ -40,6 +40,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
   const [enviando, setEnviando] = useState(false)
   const [codigoPedido, setCodigoPedido] = useState<string | null>(null)
   const [totalFinal, setTotalFinal] = useState<number | null>(null)
+  const [copiado, setCopiado] = useState<'codigo' | 'link' | null>(null)
 
   const ehInterior = bairroSel === INTERIOR
   const bairroEscolhido = bairros.find((b) => String(b.id) === bairroSel)
@@ -83,6 +84,16 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
 
   // Confirmação após envio
   if (pedidoEnviado) {
+    const copiar = async (qual: 'codigo' | 'link', texto: string) => {
+      try {
+        await navigator.clipboard.writeText(texto)
+        setCopiado(qual)
+        setTimeout(() => setCopiado(null), 2500)
+      } catch {
+        // sem permissão de área de transferência — o número continua na tela (select-all)
+      }
+    }
+
     return (
       <main className="min-h-screen bg-[#0D1410] px-4 py-16 text-[#E0E8DF]">
         <div className="mx-auto max-w-md rounded-2xl border border-[#1C2920] bg-[#111813] p-8 text-center">
@@ -92,13 +103,45 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
           <h1 className="text-xl font-bold text-[#D0D8D0]" style={{ fontFamily: 'var(--font-serif)' }}>
             Pedido recebido
           </h1>
-          <p className="mt-2 text-sm text-[#3D5040]">
-            A Aurelia&apos;s Pizzaria já recebeu seu pedido. Acompanhe o andamento pelo botão abaixo.
+          <p className="mt-2 text-sm text-[#7A8C78]">
+            A Aurelia&apos;s Pizzaria já recebeu seu pedido.
           </p>
+
+          {codigoPedido && (
+            <div className="mt-6 rounded-xl border-2 border-[#C9A24F] bg-[#1A1710] p-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#E0C27A]">
+                Anote o número do seu pedido
+              </p>
+              <p className="mt-2 text-3xl font-bold tracking-wider text-[#F2DDA4] tabular-nums select-all">
+                {codigoPedido}
+              </p>
+              <p className="mt-3 text-xs leading-relaxed text-[#B89A5A]">
+                Com ele você acompanha o pedido a qualquer momento: no site, toque em{' '}
+                <strong className="text-[#E0C27A]">&quot;Acompanhar pedido&quot;</strong> (no topo da página) e
+                digite o número. Se falar com a loja, informe esse número também.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => copiar('codigo', codigoPedido)}
+                  className="flex-1 rounded-lg border border-[#4A3F20] px-3 py-2 text-xs font-semibold text-[#E0C27A] hover:bg-[#241F12] cursor-pointer"
+                >
+                  {copiado === 'codigo' ? 'Copiado ✓' : 'Copiar número'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copiar('link', `${window.location.origin}/pedido/${codigoPedido}`)}
+                  className="flex-1 rounded-lg border border-[#4A3F20] px-3 py-2 text-xs font-semibold text-[#E0C27A] hover:bg-[#241F12] cursor-pointer"
+                >
+                  {copiado === 'link' ? 'Copiado ✓' : 'Copiar link'}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 rounded-xl bg-[#0E1510] border border-[#1C2920] p-4 text-left text-xs space-y-1.5">
             <p className="font-semibold text-[#8AA087] mb-1 uppercase tracking-widest text-[10px]">
-              Confirmação {codigoPedido && `· ${codigoPedido}`}
+              Resumo
             </p>
             <p className="text-[#C8D5C7]">{nome} · {telefone}</p>
             <p className="text-[#526550]">{rua}, {numero} — {nomeBairro} {complemento && `(${complemento})`}</p>
@@ -111,9 +154,9 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
           {codigoPedido && (
             <Link
               href={`/pedido/${codigoPedido}`}
-              className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl border border-[#2E4030] px-6 py-3 text-sm font-semibold text-[#8AA087] hover:border-[#4A6A3F] hover:text-[#C8D5C7]"
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl border border-[#2E4030] px-6 py-3 text-sm font-semibold text-[#8AA087] hover:border-[#4A6A3F] hover:text-[#C8D5C7]"
             >
-              Acompanhar pedido
+              Acompanhar pedido agora →
             </Link>
           )}
 

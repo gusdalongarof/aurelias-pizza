@@ -309,6 +309,12 @@ abria um link `wa.me` com o resumo do pedido; agora ele só grava
 "Acompanhar pedido". O pedido chega à loja pelo painel (Realtime + beep +
 impressão), não por mensagem.
 
+Desde 2026-10-07 a confirmação destaca o `codigo` num quadro dourado
+("Anote o número do seu pedido"), explica que se acompanha por "Acompanhar
+pedido" no topo do site e tem botões "Copiar número" / "Copiar link"
+(`<origin>/pedido/<codigo>`). Sem WhatsApp nem e-mail, essa tela é o único
+lugar onde o cliente recebe o código.
+
 - `config_loja.telefone_whats` ficou sem uso no checkout.
 - Mensagens de erro ainda dizem "fale com a loja pelo WhatsApp" como contato
   alternativo — é só texto, não há link.
@@ -349,8 +355,8 @@ não tratar como referência até resolver a pendência 1 abaixo.
 4. ~~Contas de login do painel~~ — **resolvido**: `auth.users` tem 2 contas
    confirmadas (conferido em 2026-10-05). O dono é amigo do Gustavo, então
    não há uma terceira conta separada. Em 2026-10-07 o Gustavo apagou a conta
-   antiga do dono (nunca tinha feito login) e criou outra pelo dashboard —
-   ainda sem login nessa data.
+   antiga do dono (nunca tinha feito login) e criou outra pelo dashboard.
+   Primeiro login da conta nova confirmado no mesmo dia (22:39 UTC).
 5. Projeto Supabase no plano gratuito **pausa após ~7 dias sem uso** — já
    pausou uma vez (restaurado em 2026-10-05 sem perda de dados). Antes de ir
    para produção, garantir uso regular ou plano pago.
