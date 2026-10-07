@@ -158,7 +158,13 @@ pedidos têm cada um sua conta.
 - Alerta sonoro é **sintetizado via Web Audio API**
   (`src/lib/som-alerta.ts`), não é um arquivo de áudio. Por causa da política
   de autoplay do navegador, o primeiro beep só toca depois que o usuário
-  clica em "Ativar alertas sonoros" na tela.
+  clica em "Ativar alertas sonoros" na tela. Esse clique já toca o alerta
+  uma vez (confere o volume e libera o áudio dentro do gesto).
+  Desde 2026-10-07 o alerta é mais alto, a pedido do Gustavo: onda quadrada
+  a 90% com `DynamicsCompressor`, duas notas alternadas (988/1319 Hz)
+  repetidas 3x, ~2s no total. Antes eram dois bipes senoidais curtos a 35%.
+  Ajustar em `TOQUES`/`DURACAO`/`VOLUME` no topo de `som-alerta.ts`. O volume
+  do Windows e das caixas no PC do painel também limita.
 - Transição de status é validada no servidor, não só documentada:
   `src/app/api/pedidos/[id]/status/route.ts` (ver seção "Status de status do
   pedido" abaixo).
