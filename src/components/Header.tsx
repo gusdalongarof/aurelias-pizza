@@ -26,9 +26,10 @@ export default function Header({ config }: HeaderProps) {
         </span>
 
         <div className="flex items-center gap-3">
+          {/* No celular fica só o botão grande abaixo do logo — aqui não cabe com o carrinho. */}
           <Link
             href="/pedido"
-            className="text-xs text-[#4D6150] hover:text-[#8AA087] transition-colors"
+            className="hidden sm:inline-flex items-center rounded-full border border-[#4A3F20] bg-[#1A1710] px-4 py-1.5 text-xs font-semibold text-[#E0C27A] hover:border-[#C9A24F] hover:bg-[#241F12] transition-colors"
           >
             Acompanhar pedido
           </Link>
@@ -86,6 +87,20 @@ export default function Header({ config }: HeaderProps) {
         <div className="mt-5 text-xs text-[#4D6150]">
           <p>Taxa de entrega por bairro &nbsp;·&nbsp; Pedido mínimo {brl(config.pedido_minimo)}</p>
         </div>
+
+        <Link
+          href="/pedido"
+          className="mt-6 inline-flex items-center gap-2.5 rounded-xl border-2 border-[#C9A24F] bg-[#1A1710] px-5 py-3 text-sm font-semibold text-[#F2DDA4] hover:bg-[#241F12] transition-colors"
+        >
+          <svg className="h-5 w-5 text-[#C9A24F]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <span>
+            Já fez seu pedido? <span className="underline underline-offset-4">Acompanhar pedido</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </header>
   )
