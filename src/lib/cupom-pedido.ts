@@ -7,7 +7,7 @@ import type { Pedido } from '@/types/pedido'
  * a janela de confirmação, o Chrome desse PC precisa ser aberto com
  * `--kiosk-printing` e a térmica precisa ser a impressora padrão do Windows.
  *
- * Conteúdo com 50mm de largura, encostado à esquerda: com 72mm a térmica
+ * Conteúdo com 45mm de largura, encostado à esquerda: com 72mm (e 50mm) a térmica
  * cortava o lado direito. Texto longo quebra em mais linhas.
  */
 
@@ -56,7 +56,7 @@ function montarHtmlCupom(pedido: Pedido) {
 <style>
   @page { size: 80mm auto; margin: 0; }
   * { box-sizing: border-box; }
-  body { width: 50mm; margin: 0; padding: 2mm 0 6mm 1mm; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; overflow-wrap: anywhere; }
+  body { width: 45mm; margin: 0; padding: 2mm 0 6mm 1mm; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; overflow-wrap: anywhere; }
   h1 { font-size: 14px; text-align: center; margin: 0 0 2px; }
   .codigo { font-size: 18px; font-weight: bold; text-align: center; margin: 4px 0; }
   .centro { text-align: center; }

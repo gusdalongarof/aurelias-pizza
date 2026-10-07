@@ -180,7 +180,7 @@ ligar/desligar manual — não há agendamento por data/dia da semana.
 Implementado em 2026-10-05. Impressora térmica **Oásis OIA-8388** (80mm),
 ligada no PC Windows do amigo, que fica com o `/painel` sempre aberto.
 
-- `src/lib/cupom-pedido.ts` monta o cupom em HTML (largura útil **50mm**,
+- `src/lib/cupom-pedido.ts` monta o cupom em HTML (largura útil **45mm**,
   encostado à esquerda — com 72mm a térmica cortava o lado direito) e
   imprime por um iframe oculto com `window.print()`. Não é ESC/POS direto.
 - Em `PedidosList.tsx`, o checkbox "Imprimir cupom automaticamente" é
