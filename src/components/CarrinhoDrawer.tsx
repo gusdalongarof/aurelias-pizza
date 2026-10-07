@@ -32,7 +32,7 @@ export default function CarrinhoDrawer() {
   if (!isCartOpen) return null
 
   const handleIrParaCheckout = () => {
-    if (!atingiuPedidoMinimo) return
+    if (!atingiuPedidoMinimo || !config.aberta) return
     fecharCarrinho()
     router.push('/checkout')
   }
@@ -197,11 +197,11 @@ export default function CarrinhoDrawer() {
 
             <button
               type="button"
-              disabled={!atingiuPedidoMinimo}
+              disabled={!atingiuPedidoMinimo || !config.aberta}
               onClick={handleIrParaCheckout}
               className="btn-primary"
             >
-              Finalizar Pedido →
+              {config.aberta ? 'Finalizar Pedido →' : 'Loja fechada no momento'}
             </button>
 
             <button

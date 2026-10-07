@@ -94,14 +94,20 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
                 key={t.id}
                 type="button"
                 onClick={() => handleTamanho(t.id)}
-                className={`rounded-xl p-3.5 text-left border cursor-pointer ${
+                aria-pressed={sel}
+                className={`relative rounded-xl p-3.5 text-left border-2 cursor-pointer transition-colors ${
                   sel
-                    ? 'border-[#4A6A3F] bg-[#192519]'
+                    ? 'border-[#C9A24F] bg-[#2A2414] shadow-[0_0_0_3px_rgba(201,162,79,0.18)]'
                     : 'border-[#1C2920] bg-[#111813] hover:border-[#2E4030]'
                 }`}
               >
-                <div className="font-semibold text-sm text-[#E0E8DF]">{t.nome}</div>
-                <div className="mt-0.5 text-[11px] text-[#526550]">
+                {sel && (
+                  <span className="absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#C9A24F] text-[11px] font-bold text-[#1A1508]">
+                    ✓
+                  </span>
+                )}
+                <div className={`font-semibold text-sm ${sel ? 'text-[#F2DDA4]' : 'text-[#E0E8DF]'}`}>{t.nome}</div>
+                <div className={`mt-0.5 text-[11px] ${sel ? 'text-[#B89A5A]' : 'text-[#526550]'}`}>
                   {t.fatias ? `${t.fatias} fatias` : 'Broto'} · máx. {t.max_sabores} sabor{t.max_sabores > 1 ? 'es' : ''}
                 </div>
               </button>

@@ -5,6 +5,7 @@ import MontadorPizza from '@/components/MontadorPizza'
 import SecaoBebidas from '@/components/SecaoBebidas'
 import CarrinhoDrawer from '@/components/CarrinhoDrawer'
 import CarrinhoBarraFlutuante from '@/components/CarrinhoBarraFlutuante'
+import LojaFechadaAviso, { LojaFechadaCartao } from '@/components/LojaFechadaAviso'
 import { brl } from '@/lib/format'
 import { precoVigente } from '@/lib/promocao'
 import type { Tamanho, Sabor, Borda, Bebida, Config } from '@/types/pizzaria'
@@ -124,9 +125,14 @@ export default async function Cardapio() {
             </div>
           )}
 
-          <MontadorPizza tamanhos={tamanhos} sabores={sabores} bordas={bordas} />
-
-          <SecaoBebidas bebidas={bebidas} />
+          {config.aberta ? (
+            <>
+              <MontadorPizza tamanhos={tamanhos} sabores={sabores} bordas={bordas} />
+              <SecaoBebidas bebidas={bebidas} />
+            </>
+          ) : (
+            <LojaFechadaCartao />
+          )}
 
           {/* Cardápio de consulta */}
           <div className="mt-16">
@@ -161,8 +167,14 @@ export default async function Cardapio() {
           </p>
         </div>
 
-        <CarrinhoDrawer />
-        <CarrinhoBarraFlutuante />
+        {config.aberta ? (
+          <>
+            <CarrinhoDrawer />
+            <CarrinhoBarraFlutuante />
+          </>
+        ) : (
+          <LojaFechadaAviso />
+        )}
       </main>
     </>
   )

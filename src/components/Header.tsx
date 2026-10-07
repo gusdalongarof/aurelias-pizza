@@ -84,7 +84,7 @@ export default function Header({ config }: HeaderProps) {
 
         {/* Infos de entrega — simples, sem ícones */}
         <div className="mt-5 text-xs text-[#4D6150] space-y-1">
-          <p>Entrega calculada pela distância &nbsp;·&nbsp; Pedido mínimo {brl(config.pedido_minimo)}</p>
+          <p>Taxa de entrega por bairro &nbsp;·&nbsp; Pedido mínimo {brl(config.pedido_minimo)}</p>
           {config.aviso_entrega && (
             <p className="text-[#4A5A49]">{config.aviso_entrega}</p>
           )}
