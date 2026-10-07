@@ -84,6 +84,12 @@ Está ativo em todas as tabelas.
   continua só via dashboard/service_role.
 - A `service_role` key nunca pode chegar ao browser nem a variável
   `NEXT_PUBLIC_*`.
+- `public.rls_auto_enable()` é a função do event trigger `ensure_rls` (liga
+  RLS em toda tabela nova do `public`). EXECUTE revogado de `public`/`anon`/
+  `authenticated` em 2026-10-07 (migration `revoga_execute_rls_auto_enable`)
+  por alerta do Security Advisor — o trigger continua funcionando.
+- Pendente no dashboard (Authentication → Settings): ligar "Leaked password
+  protection" (alerta do Security Advisor).
 
 ## Regras de negócio
 
@@ -198,10 +204,18 @@ ligar/desligar manual — não há agendamento por data/dia da semana.
 - O root layout (`src/app/layout.tsx`) carrega `config_loja` e passa pro
   `CartProvider`, com `force-dynamic` — antes disso, `/checkout` aberto
   direto ficava com a config padrão do código.
-- **Limitação conhecida**: o servidor ainda confia no `precoUnitario` que o
-  navegador manda por item (já era assim antes das promoções). Um preço
-  promocional que acabou enquanto a pizza estava no carrinho
-  (sessionStorage) é cobrado pelo valor antigo.
+- **Preço dos itens validado no servidor** (desde 2026-10-07): antes o
+  servidor gravava o `precoUnitario` que o navegador mandava — dava para
+  adulterar o preço pelo DevTools. Agora `calcularPrecosItens()`
+  (`src/lib/preco-pedido.ts`) recalcula cada item pelo cardápio atual (média
+  dos sabores com `precoVigente()` + borda; bebida pelo `preco`), lendo pela
+  chave anon — item desativado some pelo RLS e o pedido é recusado (422).
+  Também valida quantidade (1–50), sabores repetidos e `max_sabores`.
+  Se o preço divergir, responde **409 com `precos`** (um por item, mesma
+  ordem) e o `CheckoutForm` chama `atualizarPrecos()` do `CartContext`, então
+  o resumo já mostra o valor certo e o cliente só finaliza de novo (resolve
+  também a promoção que acabou com a pizza no carrinho). `preco_unit`,
+  `subtotal` e o pedido mínimo usam o valor do servidor.
 
 ## Impressão de cupom
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { calcularDesconto } from '@/lib/promocao'
+import { calcularPrecosItens, centavos } from '@/lib/preco-pedido'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   if (!pagamento?.forma) {
     return NextResponse.json({ error: 'Escolha a forma de pagamento.' }, { status: 400 })
   }
-  if (!itens?.length) {
+  if (!Array.isArray(itens) || !itens.length) {
     return NextResponse.json({ error: 'O carrinho está vazio.' }, { status: 400 })
   }
   if (typeof subtotal !== 'number' || subtotal <= 0) {
@@ -50,7 +51,29 @@ export async function POST(request: NextRequest) {
   if (!config.aberta) {
     return NextResponse.json({ error: 'A loja está fechada no momento.' }, { status: 422 })
   }
-  if (subtotal < config.pedido_minimo) {
+  // Preço de cada item sai do cardápio atual, não do que o navegador mandou.
+  // Se divergir (promoção acabou com a pizza no carrinho, ou valor adulterado),
+  // devolve os preços certos para o checkout atualizar o carrinho.
+  const resultadoPrecos = await calcularPrecosItens(supabase, itens)
+  if (!resultadoPrecos.ok) {
+    return NextResponse.json({ error: resultadoPrecos.error }, { status: resultadoPrecos.status })
+  }
+  const { precos } = resultadoPrecos
+  const subtotalServidor = centavos(itens.reduce((acc, item, i) => acc + precos[i] * item.quantidade, 0))
+  const precoDivergente = itens.some(
+    (item, i) => typeof item.precoUnitario !== 'number' || centavos(item.precoUnitario) !== precos[i]
+  )
+  if (precoDivergente || centavos(subtotal) !== subtotalServidor) {
+    return NextResponse.json(
+      {
+        error: 'Os preços de alguns itens mudaram. Confira o total atualizado e finalize de novo.',
+        precos,
+      },
+      { status: 409 }
+    )
+  }
+
+  if (subtotalServidor < config.pedido_minimo) {
     return NextResponse.json(
       { error: `Pedido mínimo de R$ ${config.pedido_minimo.toFixed(2)}.` },
       { status: 422 }
@@ -101,7 +124,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const total = Math.round((subtotal - descontoAtual + taxa) * 100) / 100
+  const total = centavos(subtotalServidor - descontoAtual + taxa)
   const troco = pagamento.trocoPara?.trim() ? Number(pagamento.trocoPara.replace(',', '.')) : null
 
   const { data: pedido, error: pedidoError } = await supabaseAdmin
@@ -117,7 +140,7 @@ export async function POST(request: NextRequest) {
       forma_pagamento: pagamento.forma,
       troco_para: troco && !Number.isNaN(troco) ? troco : null,
       observacao: observacao?.trim() || null,
-      subtotal,
+      subtotal: subtotalServidor,
       desconto: descontoAtual,
       taxa_entrega: taxa,
       total,
@@ -151,14 +174,14 @@ export async function POST(request: NextRequest) {
   const { data: itensInseridos, error: itensError } = await supabaseAdmin
     .from('pedido_itens')
     .insert(
-      itens.map((item) => ({
+      itens.map((item, i) => ({
         pedido_id: pedido.id,
         tipo: item.tipo,
         tamanho_id: item.tipo === 'pizza' ? item.tamanhoId : null,
         borda_id: item.tipo === 'pizza' ? item.bordaId : null,
         bebida_id: item.tipo === 'bebida' ? item.bebidaId : null,
         quantidade: item.quantidade,
-        preco_unit: item.precoUnitario,
+        preco_unit: precos[i],
       }))
     )
     .select('id')

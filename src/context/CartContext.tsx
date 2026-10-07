@@ -10,6 +10,8 @@ interface CartContextType {
   adicionarBebida: (bebida: Bebida, quantidade?: number) => void
   alterarQuantidade: (id: string, delta: number) => void
   removerItem: (id: string) => void
+  /** Troca o preço unitário de cada item (mesma ordem de `itens`) pelo que o servidor calculou. */
+  atualizarPrecos: (precos: number[]) => void
   obterQuantidadeBebida: (bebidaId: number) => number
   limparCarrinho: () => void
   isCartOpen: boolean
@@ -153,6 +155,12 @@ export function CartProvider({
     setItens((prev) => prev.filter((item) => item.id !== id))
   }
 
+  const atualizarPrecos = (precos: number[]) => {
+    setItens((prev) =>
+      prev.map((item, i) => (typeof precos[i] === 'number' ? { ...item, precoUnitario: precos[i] } : item))
+    )
+  }
+
   const obterQuantidadeBebida = (bebidaId: number): number => {
     const item = itens.find(
       (it) => it.tipo === 'bebida' && it.bebida.id === bebidaId
@@ -192,6 +200,7 @@ export function CartProvider({
         adicionarBebida,
         alterarQuantidade,
         removerItem,
+        atualizarPrecos,
         obterQuantidadeBebida,
         limparCarrinho,
         isCartOpen,

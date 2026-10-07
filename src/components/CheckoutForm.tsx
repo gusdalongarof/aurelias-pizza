@@ -23,6 +23,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
     limparTaxaEntrega,
     config,
     limparCarrinho,
+    atualizarPrecos,
   } = useCart()
 
   const [nome, setNome] = useState('')
@@ -175,6 +176,11 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
       })
       const data = await resp.json()
       if (!resp.ok) {
+        // Preço mudou desde que a pizza entrou no carrinho: o servidor manda
+        // os valores certos e o resumo atualiza antes de o cliente tentar de novo.
+        if (resp.status === 409 && Array.isArray(data.precos) && data.precos.length === itens.length) {
+          atualizarPrecos(data.precos)
+        }
         setErro(data.error || 'Não foi possível registrar o pedido.')
         return
       }
