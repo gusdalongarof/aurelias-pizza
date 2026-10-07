@@ -3,15 +3,14 @@
 import React, { useState } from 'react'
 import type { Tamanho, Sabor, Borda } from '@/types/pizzaria'
 import { useCart } from '@/context/CartContext'
+import { brl } from '@/lib/format'
+import { precoVigente } from '@/lib/promocao'
 
 interface MontadorPizzaProps {
   tamanhos: Tamanho[]
   sabores: Sabor[]
   bordas: Borda[]
 }
-
-const brl = (v: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 
 export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPizzaProps) {
   const { adicionarPizza, abrirCarrinho } = useCart()
@@ -26,8 +25,13 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
   const maxSabores = tamanhoAtual?.max_sabores ?? 1
   const bordaAtual = bordas.find((b) => b.id === bordaId) ?? bordas[0]
 
-  const obterPreco = (sabor: Sabor, tId: number) =>
-    sabor.sabor_preco.find((p) => p.tamanho_id === tId)?.preco ?? 0
+  const obterPrecoTabela = (sabor: Sabor, tId: number) =>
+    sabor.sabor_preco.find((p) => p.tamanho_id === tId)
+
+  const obterPreco = (sabor: Sabor, tId: number) => {
+    const sp = obterPrecoTabela(sabor, tId)
+    return sp ? precoVigente(sp) : 0
+  }
 
   const handleTamanho = (novoId: number) => {
     const limite = tamanhos.find((t) => t.id === novoId)?.max_sabores ?? 1
@@ -140,6 +144,8 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
             const sel = saboresIds.includes(s.id)
             const idx = saboresIds.indexOf(s.id)
             const preco = obterPreco(s, tamanhoAtual.id)
+            const precoNormal = obterPrecoTabela(s, tamanhoAtual.id)?.preco ?? 0
+            const emPromo = preco > 0 && preco < precoNormal
 
             return (
               <button
@@ -167,7 +173,15 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
                     </p>
                   )}
                 </div>
-                <span className="shrink-0 text-sm preco">{preco > 0 ? brl(preco) : '—'}</span>
+                <span className="shrink-0 text-right">
+                  {emPromo && (
+                    <span className="block text-[11px] text-[#4D6150] line-through tabular-nums">{brl(precoNormal)}</span>
+                  )}
+                  <span className="text-sm preco">{preco > 0 ? brl(preco) : '—'}</span>
+                  {emPromo && (
+                    <span className="block text-[10px] font-bold text-[#C9A24F] uppercase tracking-wide">Promoção</span>
+                  )}
+                </span>
               </button>
             )
           })}

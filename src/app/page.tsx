@@ -6,6 +6,7 @@ import SecaoBebidas from '@/components/SecaoBebidas'
 import CarrinhoDrawer from '@/components/CarrinhoDrawer'
 import CarrinhoBarraFlutuante from '@/components/CarrinhoBarraFlutuante'
 import { brl } from '@/lib/format'
+import { precoVigente } from '@/lib/promocao'
 import type { Tamanho, Sabor, Borda, Bebida, Config } from '@/types/pizzaria'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +16,7 @@ export default async function Cardapio() {
     supabase.from('tamanhos').select('*').order('ordem'),
     supabase
       .from('sabores')
-      .select('id, nome, descricao, categoria, sabor_preco(tamanho_id, preco)')
+      .select('id, nome, descricao, categoria, sabor_preco(tamanho_id, preco, preco_promo)')
       .order('nome'),
     supabase.from('bordas').select('*').order('preco_extra'),
     supabase.from('bebidas').select('*').order('nome'),
@@ -53,7 +54,7 @@ export default async function Cardapio() {
   const doces = sabores.filter((s) => s.categoria === 'doce')
 
   const preco = (sabor: Sabor, tamanhoId: number) =>
-    sabor.sabor_preco.find((p) => p.tamanho_id === tamanhoId)?.preco
+    sabor.sabor_preco.find((p) => p.tamanho_id === tamanhoId)
 
   const ListaSabores = ({ titulo, itens }: { titulo: string; itens: Sabor[] }) => (
     <section className="mt-10">
@@ -89,7 +90,10 @@ export default async function Cardapio() {
                     key={t.id}
                     className="w-14 sm:w-20 text-right tabular-nums text-sm preco"
                   >
-                    {p ? brl(p) : <span className="text-[#2A3828]">—</span>}
+                    {p?.preco_promo != null && (
+                      <span className="block text-[10px] text-[#4D6150] line-through">{brl(p.preco)}</span>
+                    )}
+                    {p ? brl(precoVigente(p)) : <span className="text-[#2A3828]">—</span>}
                   </span>
                 )
               })}
@@ -106,6 +110,19 @@ export default async function Cardapio() {
       <main className="min-h-screen bg-[#0D1410] px-4 sm:px-6 py-6 pb-36 text-[#E0E8DF]">
         <div className="mx-auto max-w-2xl">
           <Header config={config} />
+
+          {(config.frete_gratis || (config.desconto_pedido_ativo && config.desconto_pedido_pct > 0)) && (
+            <div className="mt-4 rounded-xl border border-[#4A3F20] bg-[#1A1710] px-4 py-3 text-sm text-[#E0C27A]">
+              {[
+                config.frete_gratis && 'Frete grátis hoje',
+                config.desconto_pedido_ativo &&
+                  config.desconto_pedido_pct > 0 &&
+                  `${config.desconto_pedido_pct}% de desconto em todo o pedido`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
+          )}
 
           <MontadorPizza tamanhos={tamanhos} sabores={sabores} bordas={bordas} />
 

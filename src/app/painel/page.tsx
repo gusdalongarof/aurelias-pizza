@@ -1,6 +1,8 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import LogoutButton from '@/components/painel/LogoutButton'
+import LojaAbertaToggle from '@/components/painel/LojaAbertaToggle'
 import PedidosList from '@/components/painel/PedidosList'
 import type { Pedido } from '@/types/pedido'
 
@@ -17,12 +19,18 @@ export default async function PainelPage() {
     redirect('/painel/login')
   }
 
+  const { data: config } = await supabase
+    .from('config_loja')
+    .select('aberta')
+    .eq('id', 1)
+    .single()
+
   const { data: pedidos, error } = await supabase
     .from('pedidos')
     .select(
       `
       id, codigo, cliente_nome, cliente_fone, tipo_entrega, endereco, bairro,
-      forma_pagamento, troco_para, observacao, subtotal, taxa_entrega, total,
+      forma_pagamento, troco_para, observacao, subtotal, desconto, taxa_entrega, total,
       status, criado_em,
       pedido_itens (
         id, tipo, tamanho_id, borda_id, bebida_id, quantidade, preco_unit, observacao,
@@ -45,10 +53,19 @@ export default async function PainelPage() {
             Painel do dono
           </h1>
           <div className="flex items-center gap-3 text-xs text-[#526550]">
+            <Link href="/painel/promocoes" className="text-[#8AA087] hover:text-[#C8D5C7] underline">
+              Promoções
+            </Link>
             <span>{user.email}</span>
             <LogoutButton />
           </div>
         </div>
+
+        {config && (
+          <div className="mb-8">
+            <LojaAbertaToggle abertaInicial={config.aberta} />
+          </div>
+        )}
 
         {error ? (
           <p className="text-sm text-[#C47070]">Não foi possível carregar os pedidos.</p>

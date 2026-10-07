@@ -9,7 +9,7 @@ import type { Pedido, PedidoStatus } from '@/types/pedido'
 
 const SELECT_PEDIDO = `
   id, codigo, cliente_nome, cliente_fone, tipo_entrega, endereco, bairro,
-  forma_pagamento, troco_para, observacao, subtotal, taxa_entrega, total,
+  forma_pagamento, troco_para, observacao, subtotal, desconto, taxa_entrega, total,
   status, criado_em,
   pedido_itens (
     id, tipo, tamanho_id, borda_id, bebida_id, quantidade, preco_unit, observacao,

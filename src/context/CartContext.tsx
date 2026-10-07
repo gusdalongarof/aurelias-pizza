@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { CartItem, CartItemPizza, CartItemBebida, Bebida, Config } from '@/types/pizzaria'
+import { calcularDesconto } from '@/lib/promocao'
 
 interface CartContextType {
   itens: CartItem[]
@@ -20,9 +21,11 @@ interface CartContextType {
   config: Config
   setConfig: (config: Config) => void
   subtotal: number
+  desconto: number
+  /** Frete grátis ligado no painel — taxaEntrega já vem 0, sem precisar calcular. */
+  freteGratis: boolean
   taxaEntrega: number | null
-  distanciaKm: number | null
-  definirTaxaEntrega: (taxaEntrega: number, distanciaKm: number) => void
+  definirTaxaEntrega: (taxaEntrega: number) => void
   limparTaxaEntrega: () => void
   total: number
   atingiuPedidoMinimo: boolean
@@ -34,10 +37,14 @@ const configPadrao: Config = {
   aberta: true,
   pedido_minimo: 30,
   taxa_entrega_padrao: 8,
-  taxa_entrega_por_km: 0,
+  taxa_entrega_por_km: null,
+  taxa_entrega_interior: 18,
   endereco_loja: null,
   aviso_entrega: 'Entregamos no perímetro urbano.',
   telefone_whats: '5555992323508',
+  frete_gratis: false,
+  desconto_pedido_ativo: false,
+  desconto_pedido_pct: 0,
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -53,8 +60,7 @@ export function CartProvider({
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [observacao, setObservacao] = useState('')
   const [config, setConfig] = useState<Config>(configInicial || configPadrao)
-  const [taxaEntrega, setTaxaEntrega] = useState<number | null>(null)
-  const [distanciaKm, setDistanciaKm] = useState<number | null>(null)
+  const [taxaCalculada, setTaxaEntrega] = useState<number | null>(null)
 
   // Atualiza config se vier nova prop
   useEffect(() => {
@@ -158,18 +164,11 @@ export function CartProvider({
     setItens([])
     setObservacao('')
     setTaxaEntrega(null)
-    setDistanciaKm(null)
   }
 
-  const definirTaxaEntrega = (novaTaxa: number, novaDistanciaKm: number) => {
-    setTaxaEntrega(novaTaxa)
-    setDistanciaKm(novaDistanciaKm)
-  }
+  const definirTaxaEntrega = (novaTaxa: number) => setTaxaEntrega(novaTaxa)
 
-  const limparTaxaEntrega = () => {
-    setTaxaEntrega(null)
-    setDistanciaKm(null)
-  }
+  const limparTaxaEntrega = () => setTaxaEntrega(null)
 
   const abrirCarrinho = () => setIsCartOpen(true)
   const fecharCarrinho = () => setIsCartOpen(false)
@@ -179,7 +178,10 @@ export function CartProvider({
   const pedidoMinimo = config?.pedido_minimo ?? 30
   const atingiuPedidoMinimo = subtotal >= pedidoMinimo
   const valorRestantePedidoMinimo = Math.max(0, pedidoMinimo - subtotal)
-  const total = subtotal > 0 ? subtotal + (taxaEntrega ?? 0) : 0
+  const desconto = calcularDesconto(subtotal, config)
+  const freteGratis = config.frete_gratis
+  const taxaEntrega = freteGratis ? 0 : taxaCalculada
+  const total = subtotal > 0 ? Math.round((subtotal - desconto + (taxaEntrega ?? 0)) * 100) / 100 : 0
   const quantidadeTotal = itens.reduce((acc, item) => acc + item.quantidade, 0)
 
   return (
@@ -201,8 +203,9 @@ export function CartProvider({
         config,
         setConfig,
         subtotal,
+        desconto,
+        freteGratis,
         taxaEntrega,
-        distanciaKm,
         definirTaxaEntrega,
         limparTaxaEntrega,
         total,

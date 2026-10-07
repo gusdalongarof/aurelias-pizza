@@ -40,6 +40,7 @@ export type Pedido = {
   troco_para: number | null
   observacao: string | null
   subtotal: number
+  desconto: number
   taxa_entrega: number
   total: number
   status: PedidoStatus
@@ -74,10 +75,14 @@ export type NovoPedidoItemPayload =
 
 export type NovoPedidoPayload = {
   cliente: { nome: string; telefone: string }
-  endereco: { rua: string; numero: string; bairro: string; complemento?: string }
+  /** bairroId null = interior; aí `bairro` é a localidade digitada pelo cliente. */
+  endereco: { rua: string; numero: string; bairroId: number | null; bairro: string; complemento?: string }
   pagamento: { forma: FormaPagamento; trocoPara?: string }
   observacao?: string
   itens: NovoPedidoItemPayload[]
   subtotal: number
+  desconto: number
   taxaEntrega: number
+  /** O cliente viu frete grátis — o servidor recusa se a promoção já tiver acabado. */
+  freteGratis: boolean
 }

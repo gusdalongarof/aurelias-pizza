@@ -9,6 +9,8 @@ export type Tamanho = {
 export type SaborPreco = {
   tamanho_id: number
   preco: number
+  /** Preço promocional definido no painel; null = sem promoção. */
+  preco_promo: number | null
 }
 
 export type Sabor = {
@@ -36,13 +38,26 @@ export type Config = {
   id?: number
   aberta: boolean
   pedido_minimo: number
-  /** @deprecated sem uso — entrega agora é calculada por distância, ver taxa_entrega_por_km */
+  /** @deprecated sem uso — entrega é por bairro (tabela bairros) ou taxa_entrega_interior */
   taxa_entrega_padrao: number
-  taxa_entrega_por_km: number
+  /** @deprecated sem uso — cálculo por distância (Google Maps) foi abandonado */
+  taxa_entrega_por_km: number | null
+  /** Taxa única para entregas fora da cidade (interior/zona rural). */
+  taxa_entrega_interior: number
   endereco_loja: string | null
   aviso_entrega: string | null
   telefone_whats?: string | null
   regra_meio_a_meio?: string | null
+  frete_gratis: boolean
+  desconto_pedido_ativo: boolean
+  desconto_pedido_pct: number
+}
+
+export type Bairro = {
+  id: number
+  nome: string
+  taxa_entrega: number
+  tempo_entrega_min: number | null
 }
 
 export type CartItemPizza = {

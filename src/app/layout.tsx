@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
 import Providers from '@/components/Providers'
+import { supabase } from '@/lib/supabase'
+import type { Config } from '@/types/pizzaria'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -20,15 +22,21 @@ export const metadata: Metadata = {
   description: 'Cardápio online, pizzas artesanais com massa fresca e ingredientes selecionados.',
 }
 
-export default function RootLayout({
+// A config (loja aberta, frete grátis, desconto) precisa estar fresca em toda
+// rota — inclusive /checkout aberto direto, sem passar pela home.
+export const dynamic = 'force-dynamic'
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { data: config } = await supabase.from('config_loja').select('*').eq('id', 1).single()
+
   return (
     <html lang="pt-BR" className={`${playfair.variable} ${jakarta.variable}`}>
       <body className="bg-[#0D1410] text-[#E0E8DF] min-h-screen selection:bg-[#3A5630] selection:text-white antialiased font-sans">
-        <Providers>{children}</Providers>
+        <Providers config={(config as Config | null) ?? undefined}>{children}</Providers>
       </body>
     </html>
   )

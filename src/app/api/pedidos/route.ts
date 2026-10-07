@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { calcularDesconto } from '@/lib/promocao'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as Partial<NovoPedidoPayload>
-  const { cliente, endereco, pagamento, observacao, itens, subtotal, taxaEntrega } = body
+  const { cliente, endereco, pagamento, observacao, itens, subtotal, desconto, taxaEntrega, freteGratis } = body
 
   if (!cliente?.nome?.trim() || !cliente?.telefone?.trim()) {
     return NextResponse.json({ error: 'Informe nome e telefone do cliente.' }, { status: 400 })
@@ -23,7 +24,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Subtotal inválido.' }, { status: 400 })
   }
   if (typeof taxaEntrega !== 'number' || !Number.isFinite(taxaEntrega) || taxaEntrega < 0) {
-    return NextResponse.json({ error: 'Calcule o frete antes de enviar o pedido.' }, { status: 400 })
+    return NextResponse.json({ error: 'Escolha o bairro de entrega.' }, { status: 400 })
+  }
+  if (endereco.bairroId !== null && !Number.isInteger(endereco.bairroId)) {
+    return NextResponse.json({ error: 'Bairro inválido.' }, { status: 400 })
   }
 
   const supabaseAdmin = getSupabaseAdmin()
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   const { data: config, error: configError } = await supabase
     .from('config_loja')
-    .select('aberta, pedido_minimo')
+    .select('aberta, pedido_minimo, frete_gratis, desconto_pedido_ativo, desconto_pedido_pct, taxa_entrega_interior')
     .eq('id', 1)
     .single()
 
@@ -53,7 +57,51 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const total = Math.round((subtotal + taxaEntrega) * 100) / 100
+  // Promoções valem pelo que está no banco agora, não pelo que o navegador
+  // mandou. Se mudaram desde que o cliente abriu a página, recusa em vez de
+  // gravar um total diferente do que ele viu.
+  const descontoAtual = calcularDesconto(subtotal, config)
+  if (freteGratis && !config.frete_gratis) {
+    return NextResponse.json(
+      { error: 'O frete grátis foi encerrado. Recarregue a página para ver a taxa de entrega.' },
+      { status: 409 }
+    )
+  }
+  if (desconto !== descontoAtual) {
+    return NextResponse.json(
+      { error: 'As promoções mudaram. Recarregue a página para ver os valores atualizados.' },
+      { status: 409 }
+    )
+  }
+
+  // Taxa sai da tabela de bairros (ou da taxa única do interior), não do
+  // valor que o navegador mandou.
+  let taxaTabela = config.taxa_entrega_interior
+  let nomeBairro = `Interior — ${endereco.bairro.trim()}`
+  if (endereco.bairroId !== null) {
+    const { data: bairro } = await supabase
+      .from('bairros')
+      .select('nome, taxa_entrega')
+      .eq('id', endereco.bairroId)
+      .single()
+    if (!bairro) {
+      return NextResponse.json(
+        { error: 'Não entregamos nesse bairro. Recarregue a página e escolha outro.' },
+        { status: 422 }
+      )
+    }
+    taxaTabela = bairro.taxa_entrega
+    nomeBairro = bairro.nome
+  }
+  const taxa = config.frete_gratis ? 0 : taxaTabela
+  if (!config.frete_gratis && taxaEntrega !== taxa) {
+    return NextResponse.json(
+      { error: 'A taxa de entrega mudou. Recarregue a página para ver o valor atualizado.' },
+      { status: 409 }
+    )
+  }
+
+  const total = Math.round((subtotal - descontoAtual + taxa) * 100) / 100
   const troco = pagamento.trocoPara?.trim() ? Number(pagamento.trocoPara.replace(',', '.')) : null
 
   const { data: pedido, error: pedidoError } = await supabaseAdmin
@@ -64,12 +112,14 @@ export async function POST(request: NextRequest) {
       cliente_fone: cliente.telefone.trim(),
       tipo_entrega: 'entrega',
       endereco: `${endereco.rua.trim()}, ${endereco.numero.trim()}${endereco.complemento?.trim() ? ` - ${endereco.complemento.trim()}` : ''}`,
-      bairro: endereco.bairro.trim(),
+      bairro: nomeBairro,
+      bairro_id: endereco.bairroId,
       forma_pagamento: pagamento.forma,
       troco_para: troco && !Number.isNaN(troco) ? troco : null,
       observacao: observacao?.trim() || null,
       subtotal,
-      taxa_entrega: taxaEntrega,
+      desconto: descontoAtual,
+      taxa_entrega: taxa,
       total,
       status: 'novo',
     })
@@ -142,5 +192,5 @@ export async function POST(request: NextRequest) {
     return falhar('Não foi possível registrar o pedido. Tente novamente ou fale pelo WhatsApp.')
   }
 
-  return NextResponse.json({ id: pedido.id, codigo, total }, { status: 201 })
+  return NextResponse.json({ id: pedido.id, codigo, total, desconto: descontoAtual, taxaEntrega: taxa }, { status: 201 })
 }

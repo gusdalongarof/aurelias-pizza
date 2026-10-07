@@ -19,11 +19,14 @@ export default function CarrinhoDrawer() {
     observacao,
     setObservacao,
     subtotal,
+    desconto,
+    freteGratis,
     taxaEntrega,
     total,
     atingiuPedidoMinimo,
     valorRestantePedidoMinimo,
     quantidadeTotal,
+    config,
   } = useCart()
 
   if (!isCartOpen) return null
@@ -174,10 +177,16 @@ export default function CarrinhoDrawer() {
                 <span>Subtotal</span>
                 <span className="text-[#C8D5C7] tabular-nums">{brl(subtotal)}</span>
               </div>
+              {desconto > 0 && (
+                <div className="flex justify-between">
+                  <span>Desconto ({config.desconto_pedido_pct}%)</span>
+                  <span className="text-[#C8D5C7] tabular-nums">−{brl(desconto)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Entrega</span>
                 <span className="text-[#C8D5C7] tabular-nums">
-                  {taxaEntrega === null ? 'Calculada no checkout' : brl(taxaEntrega)}
+                  {freteGratis ? 'Grátis' : taxaEntrega === null ? 'Calculada no checkout' : brl(taxaEntrega)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-[#1A2318] pt-2 text-sm font-bold text-[#E0E8DF]">

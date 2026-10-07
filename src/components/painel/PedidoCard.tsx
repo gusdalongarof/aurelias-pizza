@@ -93,6 +93,13 @@ export default function PedidoCard({
         <p className="text-xs text-[#8A5050] italic">&quot;{pedido.observacao}&quot;</p>
       )}
 
+      {pedido.desconto > 0 && (
+        <p className="flex justify-between text-xs text-[#526550]">
+          <span>Desconto</span>
+          <span className="tabular-nums">−{brl(pedido.desconto)}</span>
+        </p>
+      )}
+
       <div className="flex justify-between border-t border-[#1C2920] pt-2 text-sm font-bold text-[#E0E8DF]">
         <span>Total</span>
         <span className="preco">{brl(pedido.total)}</span>

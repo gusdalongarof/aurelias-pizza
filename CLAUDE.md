@@ -48,14 +48,14 @@ Detalhes que já causaram erro:
   `.eq('id', 1).single()`.
 - `pedido_itens.preco_unit` guarda o preço no momento do pedido. Nunca recalcular
   o total de um pedido antigo a partir do cardápio atual.
-- `pedidos.bairro` é texto livre. `pedidos.bairro_id` existe mas está sem uso.
+- `pedidos.bairro` guarda o nome do bairro (ou `Interior — <localidade>`) e
+  `pedidos.bairro_id` o id em `bairros` (null = interior).
 - `pedidos.codigo` é gerado no servidor (`PED-` + `id` com padding) depois do
   insert, em `src/app/api/pedidos/route.ts` — não existe default/trigger no
   banco pra isso.
-- `config_loja.taxa_entrega_padrao` está **obsoleta/sem uso**, igual `bairro_id`
-  — a coluna continua no banco mas o código não lê mais ela. A taxa de entrega
-  real usa `config_loja.endereco_loja` + `taxa_entrega_por_km` (ver seção
-  "Taxa de entrega por distância").
+- `config_loja.taxa_entrega_padrao`, `taxa_entrega_por_km` e `endereco_loja`
+  estão **obsoletas/sem uso** — as colunas continuam no banco mas o código não
+  lê mais. A taxa de entrega é por bairro (ver "Taxa de entrega por bairro").
 
 ## RLS
 
@@ -69,6 +69,16 @@ Está ativo em todas as tabelas.
   `anon`.** INSERT em `pedidos`/`pedido_itens`/`pedido_item_sabores` continua
   só via `service_role` (feito pelo checkout em `POST /api/pedidos`), não tem
   policy pra `authenticated` nem `anon`.
+- `config_loja`: além do SELECT público, `authenticated` pode dar UPDATE
+  **só na coluna `aberta`** (grant por coluna + policy
+  `painel_atualiza_aberta`, migration `painel_abrir_fechar_loja`, 2026-10-05).
+  `anon` não tem UPDATE. Demais colunas só via dashboard/service_role.
+  Desde 2026-10-06 (migration `painel_promocoes_frete_gratis`) o grant por
+  coluna inclui também `frete_gratis`, `desconto_pedido_ativo` e
+  `desconto_pedido_pct`.
+- `sabor_preco`: `authenticated` pode dar UPDATE **só em `preco_promo`**
+  (grant por coluna + policy `painel_atualiza_preco_promo`). O preço normal
+  continua só via dashboard/service_role.
 - A `service_role` key nunca pode chegar ao browser nem a variável
   `NEXT_PUBLIC_*`.
 
@@ -80,36 +90,30 @@ Está ativo em todas as tabelas.
   sem uso; a coluna continua no banco mas nada lê ela.
 - Borda soma `preco_extra` por pizza. Existe opção "Tradicional" a R$0 além das
   pagas.
-- Taxa de entrega é **calculada pela distância** até o endereço do cliente —
-  ver "Taxa de entrega por distância" abaixo. Não existe mais taxa fixa nem
-  seleção de bairro numa lista; o cliente ainda digita rua/número/bairro em
-  texto livre, só que agora esse endereço alimenta o cálculo de frete.
+- Taxa de entrega é **por bairro**, escolhido numa lista no checkout — ver
+  "Taxa de entrega por bairro" abaixo.
 - Pedido mínimo em `config_loja.pedido_minimo`. Retirada no balcão tem taxa zero
   (regra documentada; o checkout atual ainda não tem a opção de retirada no
   formulário — só fluxo de entrega).
 - Loja fechada (`config_loja.aberta = false`) bloqueia a finalização do pedido.
 
-## Taxa de entrega por distância
+## Taxa de entrega por bairro
 
-Implementado em 2026-09-14. Fluxo: no checkout, depois de preencher rua/número/
-bairro, o cliente clica em "Calcular frete" → `POST /api/frete`
-(`src/app/api/frete/route.ts`, roda no servidor) → chama a **Google Distance
-Matrix API** com origem `config_loja.endereco_loja` e destino montado a partir
-do endereço digitado → `taxa = distância_km × config_loja.taxa_entrega_por_km`
-(sem taxa base, só R$/km).
+Desde 2026-10-06 (substituiu o cálculo por distância com Google Maps, que foi
+abandonado — não vai ter chave da API). Valores reais passados pelo Gustavo.
 
-- Precisa da env var **`GOOGLE_MAPS_API_KEY`** (server-only, sem `NEXT_PUBLIC_`)
-  com a Distance Matrix API habilitada e faturamento ativo no Google Cloud.
-  Ainda não configurada — sem ela a rota retorna erro 500 e o checkout mostra
-  "Fale com a loja pelo WhatsApp".
-- A taxa fica em `CartContext` como `taxaEntrega: number | null` — `null`
-  significa "ainda não calculada". O botão de enviar pedido fica desabilitado
-  até calcular. Qualquer edição em rua/número/bairro invalida o cálculo
-  anterior (`limparTaxaEntrega`), forçando recalcular.
-- `config_loja.taxa_entrega_por_km` está com valor **fictício (R$1,50/km)** —
-  pendência 1 abaixo.
-- Não existe cálculo automático de raio máximo de entrega; se quiser bloquear
-  endereços fora do perímetro, precisa ser adicionado.
+- Tabela `bairros` (`nome`, `taxa_entrega`, `tempo_entrega_min`, `ativo`).
+  O checkout é uma Server Component (`src/app/checkout/page.tsx`) que busca os
+  bairros ativos e passa para `src/components/CheckoutForm.tsx`.
+- O select mostra cada bairro numa linha só: `Centro · 50 min · R$ 10,00`.
+- Última opção: **"Interior (fora da cidade)"**, taxa única em
+  `config_loja.taxa_entrega_interior` (R$ 18,00). Ao escolher, o cliente
+  digita a localidade (linha/comunidade), gravada como
+  `pedidos.bairro = 'Interior — <localidade>'` e `bairro_id = null`.
+- `POST /api/pedidos` pega a taxa da tabela (ou do interior), não do
+  navegador, e responde 409 se divergir do que o cliente viu.
+- Para mudar valores ou adicionar bairro: editar `bairros` no banco (ainda
+  não há tela no painel).
 
 ## Painel do dono (login + tempo real)
 
@@ -135,7 +139,39 @@ pedidos têm cada um sua conta.
 - Transição de status é validada no servidor, não só documentada:
   `src/app/api/pedidos/[id]/status/route.ts` (ver seção "Status de status do
   pedido" abaixo).
+- Abrir/fechar a loja: `LojaAbertaToggle.tsx` no topo do painel →
+  `POST /api/loja/aberta` (`src/app/api/loja/aberta/route.ts`, client da
+  sessão, não service_role). Fechar pede confirmação. Com a loja fechada,
+  o Header mostra "Fechado no momento" e `POST /api/pedidos` recusa o pedido.
 - Contas de login existem (2, criadas em 2026-09-16) — ver Pendências.
+
+## Promoções e frete grátis
+
+Implementado em 2026-10-06. Tela `/painel/promocoes` (link no topo do
+painel), feita para o amigo do dono gerenciar sem mexer no banco. Tudo é
+ligar/desligar manual — não há agendamento por data/dia da semana.
+
+- **Frete grátis geral**: `config_loja.frete_gratis`. Ligado, o checkout
+  ainda pede o bairro, mas a taxa é 0 para qualquer um.
+- **Desconto % no pedido**: `config_loja.desconto_pedido_ativo` +
+  `desconto_pedido_pct`. Incide só sobre o subtotal dos itens, não sobre a
+  entrega. O pedido mínimo é comparado com o subtotal **antes** do desconto.
+- **Preço promocional por sabor × tamanho**: `sabor_preco.preco_promo`
+  (null = sem promoção; CHECK exige `< preco`). Cardápio e montador mostram
+  o normal riscado. `precoVigente()` em `src/lib/promocao.ts` decide o preço.
+- `pedidos.desconto` grava o desconto aplicado no momento (como
+  `preco_unit`). `total = subtotal - desconto + taxa_entrega`.
+- `POST /api/pedidos` recalcula o desconto e o frete grátis pelo banco
+  (`calcularDesconto` em `src/lib/promocao.ts`, mesma função do carrinho) e
+  responde **409** se divergir do que o cliente viu (promoção mudou
+  enquanto ele estava na página).
+- O root layout (`src/app/layout.tsx`) carrega `config_loja` e passa pro
+  `CartProvider`, com `force-dynamic` — antes disso, `/checkout` aberto
+  direto ficava com a config padrão do código.
+- **Limitação conhecida**: o servidor ainda confia no `precoUnitario` que o
+  navegador manda por item (já era assim antes das promoções). Um preço
+  promocional que acabou enquanto a pizza estava no carrinho
+  (sessionStorage) é cobrado pelo valor antigo.
 
 ## Impressão de cupom
 
@@ -219,15 +255,15 @@ também gatekeepa por sessão.
 ## Atenção
 
 **Cardápio (sabores, bordas e preços) já é o real**, recebido do dono e
-gravado no banco. **`config_loja.pedido_minimo` (R$ 30,00) e
-`taxa_entrega_por_km` (R$ 1,50/km) ainda são valor fictício do seed** — não
-tratar como referência até resolver a pendência 1 abaixo.
+gravado no banco, assim como as taxas por bairro (2026-10-06).
+**`config_loja.pedido_minimo` (R$ 30,00) ainda é valor fictício do seed** —
+não tratar como referência até resolver a pendência 1 abaixo.
 
 ## Pendências com o dono da pizzaria
 
-1. Valor real do R$/km de entrega e do pedido mínimo
-2. Criar a chave `GOOGLE_MAPS_API_KEY` (Google Cloud, Distance Matrix API +
-   faturamento) e configurar em produção — sem ela o checkout não calcula frete
+1. Valor real do pedido mínimo
+2. ~~Chave `GOOGLE_MAPS_API_KEY`~~ — **descartado** em 2026-10-06; entrega
+   passou a ser por bairro
 3. Configurar `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` e na Vercel
    (produção) — pegar em Supabase Dashboard → Project Settings → API →
    service_role secret. Não é recuperável via ferramentas automatizadas, só
