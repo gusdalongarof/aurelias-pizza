@@ -180,6 +180,36 @@ pedidos têm cada um sua conta.
   o Header mostra "Fechado no momento", o site bloqueia o pedido no front
   (ver "Regras de negócio") e `POST /api/pedidos` recusa o pedido.
 - Contas de login existem (2, criadas em 2026-09-16) — ver Pendências.
+- **Esqueci minha senha** (2026-10-07): link em `/painel/login` →
+  `/painel/esqueci-senha` (`EsqueciSenhaForm.tsx`,
+  `resetPasswordForEmail` com `redirectTo` = `<origin>/auth/confirm?next=/painel/nova-senha`)
+  → e-mail → `src/app/auth/confirm/route.ts` (fora do matcher do proxy)
+  troca o link por sessão → `/painel/nova-senha` (`updateUser`, mínimo 8
+  caracteres) → `/painel`. O proxy deixa `/painel/login` e
+  `/painel/esqueci-senha` abertas; `/painel/nova-senha` exige a sessão de
+  recuperação. `next` só aceita caminhos `/painel/...` (sem open redirect).
+  - Com o template de e-mail padrão (PKCE, `?code=`) o link **só funciona no
+    mesmo navegador** em que foi pedido. Para funcionar em qualquer
+    aparelho, trocar o template "Reset Password" no dashboard para
+    `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/painel/nova-senha`
+    — a rota já aceita os dois formatos.
+  - Exige no dashboard (Authentication → URL Configuration): **Site URL** =
+    domínio de produção e `https://<domínio>/auth/confirm` +
+    `http://localhost:3000/auth/confirm` em **Redirect URLs**.
+  - O SMTP padrão do Supabase só entrega para e-mails de membros da equipe
+    da organização e tem limite baixo por hora. Para o dono receber, ele
+    precisa estar na equipe do projeto ou configurar SMTP próprio.
+- **Cadastro de conta nova tem que ficar desligado** no Supabase
+  (Authentication → Sign In / Providers → "Allow new users to sign up").
+  O site não tem tela de cadastro, mas a API do Supabase aceita `signUp` com
+  a chave anon, e qualquer conta confirmada vira `authenticated` — que pelo
+  RLS lê todos os pedidos (com telefone e endereço dos clientes), muda
+  status e abre/fecha a loja. Em 2026-10-07 estava **ligado**
+  (`disable_signup: false` em `/auth/v1/settings`), ainda só com as 2
+  contas legítimas. Conferir com
+  `curl $NEXT_PUBLIC_SUPABASE_URL/auth/v1/settings -H "apikey: <anon>"`.
+  Contas novas, se precisar: criar pelo dashboard (Authentication → Users →
+  Add user), que funciona com o cadastro desligado.
 
 ## Promoções e frete grátis
 

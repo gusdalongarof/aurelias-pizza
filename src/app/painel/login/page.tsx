@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabaseBrowser } from '@/lib/supabase-browser'
 
@@ -69,6 +70,13 @@ export default function LoginPainel() {
         <button type="submit" disabled={carregando} className="btn-primary disabled:opacity-50">
           {carregando ? 'Entrando...' : 'Entrar'}
         </button>
+
+        <Link
+          href="/painel/esqueci-senha"
+          className="block text-center text-xs text-[#4D6150] hover:text-[#8AA087]"
+        >
+          Esqueci minha senha
+        </Link>
       </form>
     </main>
   )

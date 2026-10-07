@@ -28,13 +28,15 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isLoginPage = pathname === '/painel/login'
+  // Páginas para quem ainda não entrou. /painel/nova-senha não está aqui:
+  // exige a sessão criada pelo link de recuperação (/auth/confirm).
+  const isPaginaPublica = pathname === '/painel/login' || pathname === '/painel/esqueci-senha'
 
-  if (!user && !isLoginPage) {
+  if (!user && !isPaginaPublica) {
     return NextResponse.redirect(new URL('/painel/login', request.url))
   }
 
-  if (user && isLoginPage) {
+  if (user && isPaginaPublica) {
     return NextResponse.redirect(new URL('/painel', request.url))
   }
 
