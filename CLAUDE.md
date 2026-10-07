@@ -131,7 +131,12 @@ abandonado — não vai ter chave da API). Valores reais passados pelo Gustavo.
 - `POST /api/pedidos` pega a taxa da tabela (ou do interior), não do
   navegador, e responde 409 se divergir do que o cliente viu.
 - Para mudar valores ou adicionar bairro: editar `bairros` no banco (ainda
-  não há tela no painel).
+  não há tela no painel). Não precisa deploy — o checkout é `force-dynamic`.
+  Novos bairros recebem `tempo_entrega_min` igual ao dos bairros de mesma
+  taxa (só informativo, não é exibido).
+- **"Central" e "Centro" são bairros diferentes** (confirmado com o Gustavo
+  em 2026-10-07): Central (id 12) R$ 12,00, adicionado nessa data; Centro
+  (id 1) R$ 10,00. Não unificar.
 
 ## Painel do dono (login + tempo real)
 
