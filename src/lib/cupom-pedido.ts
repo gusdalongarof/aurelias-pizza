@@ -6,6 +6,9 @@ import type { Pedido } from '@/types/pedido'
  * amigo). Imprime por um iframe oculto com `window.print()` — para sair sem
  * a janela de confirmação, o Chrome desse PC precisa ser aberto com
  * `--kiosk-printing` e a térmica precisa ser a impressora padrão do Windows.
+ *
+ * Conteúdo com 50mm de largura, encostado à esquerda: com 72mm a térmica
+ * cortava o lado direito. Texto longo quebra em mais linhas.
  */
 
 const FORMA_PAGAMENTO_LABEL: Record<string, string> = {
@@ -53,19 +56,20 @@ function montarHtmlCupom(pedido: Pedido) {
 <style>
   @page { size: 80mm auto; margin: 0; }
   * { box-sizing: border-box; }
-  body { width: 72mm; margin: 0 auto; padding: 2mm 0 6mm; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000; }
-  h1 { font-size: 16px; text-align: center; margin: 0 0 2px; }
-  .codigo { font-size: 20px; font-weight: bold; text-align: center; margin: 4px 0; }
+  body { width: 50mm; margin: 0; padding: 2mm 0 6mm 1mm; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #000; overflow-wrap: anywhere; }
+  h1 { font-size: 14px; text-align: center; margin: 0 0 2px; }
+  .codigo { font-size: 18px; font-weight: bold; text-align: center; margin: 4px 0; }
   .centro { text-align: center; }
   hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
   p { margin: 2px 0; }
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   td { vertical-align: top; padding: 2px 0; }
-  .qtd { width: 8mm; font-weight: bold; }
-  .valor { text-align: right; white-space: nowrap; padding-left: 2mm; }
-  .sub { font-size: 11px; }
-  .linha { display: flex; justify-content: space-between; }
-  .total { font-size: 15px; font-weight: bold; }
+  .qtd { width: 6mm; font-weight: bold; }
+  .valor { width: 16mm; text-align: right; white-space: nowrap; padding-left: 1mm; }
+  .sub { font-size: 10px; }
+  .linha { display: flex; justify-content: space-between; gap: 2mm; }
+  .linha span:last-child { white-space: nowrap; }
+  .total { font-size: 14px; font-weight: bold; }
   .obs { border: 1px solid #000; padding: 3px; margin-top: 4px; font-weight: bold; }
 </style>
 </head>
