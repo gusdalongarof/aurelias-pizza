@@ -105,7 +105,9 @@ abandonado — não vai ter chave da API). Valores reais passados pelo Gustavo.
 - Tabela `bairros` (`nome`, `taxa_entrega`, `tempo_entrega_min`, `ativo`).
   O checkout é uma Server Component (`src/app/checkout/page.tsx`) que busca os
   bairros ativos e passa para `src/components/CheckoutForm.tsx`.
-- O select mostra cada bairro numa linha só: `Centro · 50 min · R$ 10,00`.
+- O select mostra só o nome do bairro, em ordem alfabética; a taxa aparece
+  apenas no resumo do pedido (linha "Entrega"). `tempo_entrega_min` fica no
+  banco mas não é exibido.
 - Última opção: **"Interior (fora da cidade)"**, taxa única em
   `config_loja.taxa_entrega_interior` (R$ 18,00). Ao escolher, o cliente
   digita a localidade (linha/comunidade), gravada como

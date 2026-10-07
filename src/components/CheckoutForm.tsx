@@ -289,14 +289,10 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                     <option value="">Escolha o bairro</option>
                     {bairros.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {[b.nome, b.tempo_entrega_min && `${b.tempo_entrega_min} min`, freteGratis ? 'frete grátis' : brl(b.taxa_entrega)]
-                          .filter(Boolean)
-                          .join(' · ')}
+                        {b.nome}
                       </option>
                     ))}
-                    <option value={INTERIOR}>
-                      Interior (fora da cidade) · {freteGratis ? 'frete grátis' : brl(config.taxa_entrega_interior)}
-                    </option>
+                    <option value={INTERIOR}>Interior (fora da cidade)</option>
                   </select>
                 </div>
                 {ehInterior && (

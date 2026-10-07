@@ -8,7 +8,6 @@ export default async function CheckoutPage() {
   const { data: bairros } = await supabase
     .from('bairros')
     .select('id, nome, taxa_entrega, tempo_entrega_min')
-    .order('taxa_entrega')
     .order('nome')
 
   return <CheckoutForm bairros={(bairros ?? []) as Bairro[]} />
