@@ -54,8 +54,10 @@ Detalhes que já causaram erro:
 - `pedidos.codigo` é gerado no servidor (`PED-` + `id` com padding) depois do
   insert, em `src/app/api/pedidos/route.ts` — não existe default/trigger no
   banco pra isso.
-- `config_loja.taxa_entrega_padrao`, `taxa_entrega_por_km` e `endereco_loja`
-  estão **obsoletas/sem uso** — as colunas continuam no banco mas o código não
+- `config_loja.taxa_entrega_padrao`, `taxa_entrega_por_km`, `endereco_loja`
+  e `aviso_entrega` estão **obsoletas/sem uso** (`aviso_entrega` — "Entregamos
+  no perímetro urbano." — saiu do Header em 2026-10-07, já que há entrega no
+  interior) — as colunas continuam no banco mas o código não
   lê mais. A taxa de entrega é por bairro (ver "Taxa de entrega por bairro").
 
 ## RLS
@@ -97,6 +99,17 @@ Está ativo em todas as tabelas.
   (regra documentada; o checkout atual ainda não tem a opção de retirada no
   formulário — só fluxo de entrega).
 - Loja fechada (`config_loja.aberta = false`) bloqueia a finalização do pedido.
+  Desde 2026-10-07 o bloqueio também é no front, não só no servidor:
+  - Home (`src/app/page.tsx`): abre direto com um modal "Estamos fechados no
+    momento" (`src/components/LojaFechadaAviso.tsx`). O botão "Ver cardápio"
+    fecha o modal e deixa só o cardápio de consulta — `MontadorPizza`,
+    `SecaoBebidas`, `CarrinhoDrawer` e `CarrinhoBarraFlutuante` nem são
+    renderizados; no lugar fica `LojaFechadaCartao`.
+  - `/checkout` (`src/app/checkout/page.tsx`) lê `config_loja.aberta` e, se
+    fechada, mostra o aviso em vez do `CheckoutForm`.
+  - `CarrinhoDrawer` desativa "Finalizar Pedido" (carrinho antigo no
+    sessionStorage).
+  - `POST /api/pedidos` continua recusando — é a barreira de verdade.
 
 ## Taxa de entrega por bairro
 
@@ -106,6 +119,8 @@ abandonado — não vai ter chave da API). Valores reais passados pelo Gustavo.
 - Tabela `bairros` (`nome`, `taxa_entrega`, `tempo_entrega_min`, `ativo`).
   O checkout é uma Server Component (`src/app/checkout/page.tsx`) que busca os
   bairros ativos e passa para `src/components/CheckoutForm.tsx`.
+- O Header da home diz "Taxa de entrega por bairro" (antes falava em
+  distância).
 - O select mostra só o nome do bairro, em ordem alfabética; a taxa aparece
   apenas no resumo do pedido (linha "Entrega"). `tempo_entrega_min` fica no
   banco mas não é exibido.
@@ -145,7 +160,8 @@ pedidos têm cada um sua conta.
 - Abrir/fechar a loja: `LojaAbertaToggle.tsx` no topo do painel →
   `POST /api/loja/aberta` (`src/app/api/loja/aberta/route.ts`, client da
   sessão, não service_role). Fechar pede confirmação. Com a loja fechada,
-  o Header mostra "Fechado no momento" e `POST /api/pedidos` recusa o pedido.
+  o Header mostra "Fechado no momento", o site bloqueia o pedido no front
+  (ver "Regras de negócio") e `POST /api/pedidos` recusa o pedido.
 - Contas de login existem (2, criadas em 2026-09-16) — ver Pendências.
 
 ## Promoções e frete grátis

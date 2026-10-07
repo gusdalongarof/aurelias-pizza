@@ -40,7 +40,7 @@ const configPadrao: Config = {
   taxa_entrega_por_km: null,
   taxa_entrega_interior: 18,
   endereco_loja: null,
-  aviso_entrega: 'Entregamos no perímetro urbano.',
+  aviso_entrega: null,
   telefone_whats: '5555992323508',
   frete_gratis: false,
   desconto_pedido_ativo: false,
