@@ -133,7 +133,10 @@ export default function PedidosList({ pedidosIniciais }: { pedidosIniciais: Pedi
     <div className="space-y-8">
       <div className="space-y-3">
         {!somAtivo && (
-          <button type="button" onClick={() => setSomAtivo(true)} className="btn-primary">
+          <button type="button" onClick={() => {
+              setSomAtivo(true)
+              tocarBeep() // toca uma vez para conferir o volume e já liberar o áudio no gesto
+            }} className="btn-primary">
             🔔 Ativar alertas sonoros
           </button>
         )}
