@@ -349,13 +349,13 @@ também gatekeepa por sessão.
 ## Atenção
 
 **Cardápio (sabores, bordas e preços) já é o real**, recebido do dono e
-gravado no banco, assim como as taxas por bairro (2026-10-06).
-**`config_loja.pedido_minimo` (R$ 30,00) ainda é valor fictício do seed** —
-não tratar como referência até resolver a pendência 1 abaixo.
+gravado no banco, assim como as taxas por bairro (2026-10-06) e o pedido
+mínimo (`config_loja.pedido_minimo` = R$ 20,00, passado pelo Gustavo em
+2026-10-08; o fallback do `CartContext` usa o mesmo valor).
 
 ## Pendências com o dono da pizzaria
 
-1. Valor real do pedido mínimo
+1. ~~Valor real do pedido mínimo~~ — **resolvido** em 2026-10-08: R$ 20,00
 2. ~~Chave `GOOGLE_MAPS_API_KEY`~~ — **descartado** em 2026-10-06; entrega
    passou a ser por bairro
 3. ~~`SUPABASE_SERVICE_ROLE_KEY` na Vercel~~ — **resolvido**: conferido em

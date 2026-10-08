@@ -37,7 +37,7 @@ interface CartContextType {
 
 const configPadrao: Config = {
   aberta: true,
-  pedido_minimo: 30,
+  pedido_minimo: 20,
   taxa_entrega_padrao: 8,
   taxa_entrega_por_km: null,
   taxa_entrega_interior: 18,
@@ -186,7 +186,7 @@ export function CartProvider({
 
   // Cálculos
   const subtotal = itens.reduce((acc, item) => acc + item.precoUnitario * item.quantidade, 0)
-  const pedidoMinimo = config?.pedido_minimo ?? 30
+  const pedidoMinimo = config?.pedido_minimo ?? 20
   const atingiuPedidoMinimo = subtotal >= pedidoMinimo
   const valorRestantePedidoMinimo = Math.max(0, pedidoMinimo - subtotal)
   const desconto = calcularDesconto(subtotal, config)
