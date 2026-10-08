@@ -4,7 +4,8 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
-import { brl } from '@/lib/format'
+import { brl, formatTelefone } from '@/lib/format'
+import IconeWhatsApp from '@/components/IconeWhatsApp'
 import type { Bairro, FormaPagamento } from '@/types/pizzaria'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
@@ -50,6 +51,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
   const taxaEntrega = freteGratis ? 0 : taxaBairro
   const total = subtotal > 0 ? Math.round((subtotal - desconto + (taxaEntrega ?? 0)) * 100) / 100 : 0
   const nomeBairro = ehInterior ? `Interior — ${localidade.trim()}` : (bairroEscolhido?.nome ?? '')
+  const whats = config.telefone_whats?.replace(/\D/g, '')
 
   const escolherBairro = (valor: string) => {
     setBairroSel(valor)
@@ -150,6 +152,24 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
             </p>
             <p className="pt-2 font-bold preco">{brl(totalFinal ?? total)}</p>
           </div>
+
+          {whats && (
+            <div className="mt-6">
+              <p className="text-xs text-[#7A8C78]">
+                Dúvidas sobre o pedido? Fale com a loja:{' '}
+                <span className="font-semibold text-[#C8D5C7] tabular-nums">{formatTelefone(whats)}</span>
+              </p>
+              <a
+                href={`https://wa.me/${whats}${codigoPedido ? `?text=${encodeURIComponent(`Olá! Meu pedido é o ${codigoPedido}.`)}` : ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#2F5A36] bg-[#14301B] px-6 py-3 text-sm font-semibold text-[#B8E6C1] hover:border-[#4C8F57] hover:bg-[#1A3D23] transition-colors"
+              >
+                <IconeWhatsApp className="h-5 w-5" />
+                Chamar no WhatsApp
+              </a>
+            </div>
+          )}
 
           {codigoPedido && (
             <Link

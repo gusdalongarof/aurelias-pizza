@@ -323,8 +323,12 @@ ser commitado. Não existe chave Pix no banco.
 
 - `config_loja.telefone_whats`: desde 2026-10-08 o Header da home mostra o
   número formatado (`formatTelefone` em `src/lib/format.ts`) e um botão
-  "Chamar no WhatsApp" (`wa.me/<número>`, sem mensagem pronta). Se o campo
-  estiver vazio, o bloco some. Número real da pizzaria, passado pelo Gustavo
+  "Chamar no WhatsApp" (`wa.me/<número>`, sem mensagem pronta). A tela de
+  confirmação do checkout tem o mesmo botão (abaixo do resumo), que abre a
+  conversa com "Olá! Meu pedido é o PED-…" já digitado — só um atalho de
+  contato, o pedido continua chegando pelo painel. Ícone em
+  `src/components/IconeWhatsApp.tsx`. Se o campo estiver vazio, os dois
+  blocos somem. Número real da pizzaria, passado pelo Gustavo
   em 2026-10-07: `5555991473414` ((55) 99147-3414) — o valor anterior
   (`5555992323508`) era do seed. Para trocar, editar no banco (sem deploy).
 - Mensagens de erro ainda dizem "fale com a loja pelo WhatsApp" como contato
