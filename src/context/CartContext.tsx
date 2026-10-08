@@ -64,15 +64,17 @@ export function CartProvider({
   const [config, setConfig] = useState<Config>(configInicial || configPadrao)
   const [taxaCalculada, setTaxaEntrega] = useState<number | null>(null)
 
-  // Atualiza config se vier nova prop
-  useEffect(() => {
-    if (configInicial) {
-      setConfig(configInicial)
-    }
-  }, [configInicial])
+  // Atualiza config se vier nova prop (ajuste durante o render, sem efeito)
+  const [configPropAnterior, setConfigPropAnterior] = useState(configInicial)
+  if (configInicial && configInicial !== configPropAnterior) {
+    setConfigPropAnterior(configInicial)
+    setConfig(configInicial)
+  }
 
-  // Recupera do sessionStorage
+  // Recupera do sessionStorage. Tem que ser em efeito: ler no render daria
+  // HTML diferente do servidor (carrinho vazio) e erro de hidratação.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     try {
       const salvo = sessionStorage.getItem('aurelias_cart')
       if (salvo) {
@@ -85,6 +87,7 @@ export function CartProvider({
     } catch {
       // SSR
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [])
 
   // Salva no sessionStorage
