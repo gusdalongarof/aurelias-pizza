@@ -43,7 +43,7 @@ const configPadrao: Config = {
   taxa_entrega_interior: 18,
   endereco_loja: null,
   aviso_entrega: null,
-  telefone_whats: '5555992323508',
+  telefone_whats: '5555991473414',
   frete_gratis: false,
   desconto_pedido_ativo: false,
   desconto_pedido_pct: 0,
