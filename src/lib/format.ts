@@ -9,3 +9,11 @@ export const formatDataHora = (v: string | Date) =>
     minute: '2-digit',
     timeZone: 'America/Sao_Paulo',
   }).format(new Date(v))
+
+// '5555991473414' (DDI + DDD + número) → '(55) 99147-3414'
+export const formatTelefone = (v: string) => {
+  const d = v.replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return v
+}

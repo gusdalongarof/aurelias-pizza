@@ -321,10 +321,12 @@ confirmação mostra "Pix na entrega". Um botão "Pagar com Pix pelo WhatsApp"
 na confirmação chegou a ser feito em 2026-10-07, mas foi descartado antes de
 ser commitado. Não existe chave Pix no banco.
 
-- `config_loja.telefone_whats` está **sem uso** no código (o `CartContext`
-  ainda tem o valor padrão). Número
-  real da pizzaria, passado pelo Gustavo em 2026-10-07: `5555991473414`
-  ((55) 99147-3414) — o valor anterior (`5555992323508`) era do seed.
+- `config_loja.telefone_whats`: desde 2026-10-08 o Header da home mostra o
+  número formatado (`formatTelefone` em `src/lib/format.ts`) e um botão
+  "Chamar no WhatsApp" (`wa.me/<número>`, sem mensagem pronta). Se o campo
+  estiver vazio, o bloco some. Número real da pizzaria, passado pelo Gustavo
+  em 2026-10-07: `5555991473414` ((55) 99147-3414) — o valor anterior
+  (`5555992323508`) era do seed. Para trocar, editar no banco (sem deploy).
 - Mensagens de erro ainda dizem "fale com a loja pelo WhatsApp" como contato
   alternativo — é só texto, não há link.
 - A WhatsApp Cloud API (mensagens automáticas de status) segue como ideia
