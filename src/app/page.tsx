@@ -108,7 +108,7 @@ export default async function Cardapio() {
   return (
     <>
       <ConfigSync config={config} />
-      <main className="min-h-screen bg-[#0D1410] px-4 sm:px-6 py-6 pb-10 text-[#E0E8DF]">
+      <main className="min-h-screen bg-[#0D1410] px-4 sm:px-6 py-6 pb-36 text-[#E0E8DF]">
         <div className="mx-auto max-w-2xl">
           <Header config={config} />
 
