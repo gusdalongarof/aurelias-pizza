@@ -81,7 +81,10 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
   return (
     <section className="mt-2">
       {/* Título da seção */}
-      <div className="divider-ornate mb-6">Monte sua pizza</div>
+      <div className="divider-ornate mb-2">Monte sua pizza</div>
+      <p className="mb-6 text-center text-xs text-[#8AA087]">
+        Cada pizza leva um sabor só, em qualquer tamanho.
+      </p>
 
       {/* 1. Tamanho */}
       <div>

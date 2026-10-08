@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
 import Providers from '@/components/Providers'
+import Assinatura from '@/components/Assinatura'
 import { supabase } from '@/lib/supabase'
 import type { Config } from '@/types/pizzaria'
 import './globals.css'
@@ -37,6 +38,7 @@ export default async function RootLayout({
     <html lang="pt-BR" className={`${playfair.variable} ${jakarta.variable}`}>
       <body className="bg-[#0D1410] text-[#E0E8DF] min-h-screen selection:bg-[#3A5630] selection:text-white antialiased font-sans">
         <Providers config={(config as Config | null) ?? undefined}>{children}</Providers>
+        <Assinatura />
       </body>
     </html>
   )
