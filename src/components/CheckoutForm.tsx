@@ -146,7 +146,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
             <p className="text-[#C8D5C7]">{nome} · {telefone}</p>
             <p className="text-[#526550]">{rua}, {numero} — {nomeBairro} {complemento && `(${complemento})`}</p>
             <p className="text-[#526550]">
-              {formaPagamento === 'pix' ? 'Pix' : formaPagamento === 'cartao' ? 'Cartão na entrega' : `Dinheiro ${trocoPara ? `(troco p/ ${trocoPara})` : ''}`}
+              {formaPagamento === 'pix' ? 'Pix na entrega' : formaPagamento === 'cartao' ? 'Cartão na entrega' : `Dinheiro ${trocoPara ? `(troco p/ ${trocoPara})` : ''}`}
             </p>
             <p className="pt-2 font-bold preco">{brl(totalFinal ?? total)}</p>
           </div>
@@ -330,7 +330,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
               </h2>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'pix', label: 'Pix', sub: 'Pagamento via Pix' },
+                  { id: 'pix', label: 'Pix', sub: 'Pague na entrega' },
                   { id: 'cartao', label: 'Cartão', sub: 'Débito ou crédito na entrega' },
                   { id: 'dinheiro', label: 'Dinheiro', sub: 'Pagamento em espécie' },
                 ].map((op) => {

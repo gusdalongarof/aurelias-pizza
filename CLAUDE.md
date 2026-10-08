@@ -315,7 +315,16 @@ pedido" no topo do site e tem botões "Copiar número" / "Copiar link"
 (`<origin>/pedido/<codigo>`). Sem WhatsApp nem e-mail, essa tela é o único
 lugar onde o cliente recebe o código.
 
-- `config_loja.telefone_whats` ficou sem uso no checkout.
+**Pix é pago na entrega**, como cartão e dinheiro (decidido em 2026-10-08,
+a pedido do Gustavo). No checkout a opção diz "Pague na entrega" e a
+confirmação mostra "Pix na entrega". Um botão "Pagar com Pix pelo WhatsApp"
+na confirmação chegou a ser feito em 2026-10-07, mas foi descartado antes de
+ser commitado. Não existe chave Pix no banco.
+
+- `config_loja.telefone_whats` está **sem uso** no código (o `CartContext`
+  ainda tem o valor padrão). Número
+  real da pizzaria, passado pelo Gustavo em 2026-10-07: `5555991473414`
+  ((55) 99147-3414) — o valor anterior (`5555992323508`) era do seed.
 - Mensagens de erro ainda dizem "fale com a loja pelo WhatsApp" como contato
   alternativo — é só texto, não há link.
 - A WhatsApp Cloud API (mensagens automáticas de status) segue como ideia
