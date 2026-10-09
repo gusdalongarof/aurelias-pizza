@@ -28,6 +28,7 @@ export default async function PromocoesPage() {
     supabase
       .from('sabores')
       .select('id, nome, descricao, categoria, sabor_preco(tamanho_id, preco, preco_promo)')
+      .eq('ativo', true)
       .order('nome'),
   ])
 

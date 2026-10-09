@@ -79,9 +79,16 @@ Está ativo em todas as tabelas.
   Desde 2026-10-06 (migration `painel_promocoes_frete_gratis`) o grant por
   coluna inclui também `frete_gratis`, `desconto_pedido_ativo` e
   `desconto_pedido_pct`.
-- `sabor_preco`: `authenticated` pode dar UPDATE **só em `preco_promo`**
-  (grant por coluna + policy `painel_atualiza_preco_promo`). O preço normal
-  continua só via dashboard/service_role.
+- `sabor_preco`: `authenticated` pode dar UPDATE **só em `preco_promo` e
+  `preco`** (grant por coluna + policy `painel_atualiza_preco_promo`) e
+  INSERT (policy `painel_cria_sabor_preco`). `preco` ganhou UPDATE em
+  2026-10-09 (migration `painel_edita_sabores`), ver "Cardápio no painel".
+- `sabores`: desde 2026-10-09 `authenticated` lê todos (inclusive
+  `ativo = false`, policy `painel_le_sabores`), insere, e dá UPDATE só em
+  `nome`, `descricao`, `categoria`, `ativo`. Sem DELETE (pedidos antigos
+  referenciam o sabor). CHECKs: `categoria in ('salgada','doce')` e
+  `sabor_preco.preco > 0`. O site público lê pela chave anon, então
+  continua vendo só os ativos.
 - A `service_role` key nunca pode chegar ao browser nem a variável
   `NEXT_PUBLIC_*`.
 - `public.rls_auto_enable()` é a função do event trigger `ensure_rls` (liga
@@ -251,6 +258,25 @@ ligar/desligar manual — não há agendamento por data/dia da semana.
   também a promoção que acabou com a pizza no carrinho). `preco_unit`,
   `subtotal` e o pedido mínimo usam o valor do servidor.
 
+## Cardápio no painel
+
+Implementado em 2026-10-09, a pedido do amigo do dono. Tela
+`/painel/cardapio` (link "Cardápio" no topo do painel,
+`src/components/painel/EditorCardapio.tsx`): editar nome, ingredientes,
+tipo (salgada/doce), preço por tamanho e "Aparece no cardápio"; criar sabor
+novo. Tirar do cardápio = desmarcar (não apaga). Bordas e bebidas ainda só
+pelo banco.
+
+- `POST /api/sabores` e `PATCH /api/sabores/[id]`, client da sessão;
+  validação em `src/lib/sabor-form.ts`. Sabor novo é inserido com
+  `ativo = false` e só é ativado depois que os preços gravam.
+- Baixar o preço para ≤ `preco_promo` viola o CHECK de `sabor_preco` — a
+  API responde pedindo para remover a promoção antes.
+- Carrinho aberto com preço antigo: `POST /api/pedidos` já devolve 409 com
+  os preços novos; sabor desativado → 422.
+- `/painel/promocoes` filtra `ativo = true` (pela sessão o painel enxerga os
+  desativados).
+
 ## Impressão de cupom
 
 Implementado em 2026-10-05. Impressora térmica **Oásis OIA-8388** (80mm),
@@ -384,6 +410,8 @@ mínimo (`config_loja.pedido_minimo` = R$ 20,00, passado pelo Gustavo em
 4. Checkout e gravação do pedido — **feito**
 5. Painel do dono: login, lista em tempo real, alerta sonoro, fluxo de status
    — **feito** (falta só criar as contas de login — pendência 4 acima)
-6. CRUD de cardápio, horário de funcionamento — pendente. Página pública de
+6. CRUD de cardápio — sabores e preços **feito** (2026-10-09, ver
+   "Cardápio no painel"); bordas, bebidas e horário de funcionamento —
+   pendente. Página pública de
    acompanhamento (`/pedido/[codigo]`) — **feito**, ver seção "Rastreio
    público de pedido" acima.

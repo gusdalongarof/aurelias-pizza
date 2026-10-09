@@ -53,6 +53,9 @@ export default async function PainelPage() {
             Painel do dono
           </h1>
           <div className="flex items-center gap-3 text-xs text-[#526550]">
+            <Link href="/painel/cardapio" className="text-[#8AA087] hover:text-[#C8D5C7] underline">
+              Cardápio
+            </Link>
             <Link href="/painel/promocoes" className="text-[#8AA087] hover:text-[#C8D5C7] underline">
               Promoções
             </Link>
