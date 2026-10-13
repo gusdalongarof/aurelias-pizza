@@ -86,7 +86,7 @@ function montarHtmlCupom(pedido: Pedido) {
   ${pedido.observacao ? `<p class="obs">OBS: ${esc(pedido.observacao)}</p>` : ''}
   <hr>
   <p class="linha"><span>Subtotal</span><span>${brl(pedido.subtotal)}</span></p>
-  ${pedido.desconto > 0 ? `<p class="linha"><span>Desconto</span><span>-${brl(pedido.desconto)}</span></p>` : ''}
+  ${pedido.desconto > 0 ? `<p class="linha"><span>${pedido.cupom_codigo ? `Cupom ${esc(pedido.cupom_codigo)}` : 'Desconto'}</span><span>-${brl(pedido.desconto)}</span></p>` : ''}
   <p class="linha"><span>Entrega</span><span>${brl(pedido.taxa_entrega)}</span></p>
   <p class="linha total"><span>TOTAL</span><span>${brl(pedido.total)}</span></p>
   <hr>

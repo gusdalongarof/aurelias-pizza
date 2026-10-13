@@ -258,6 +258,35 @@ ligar/desligar manual — não há agendamento por data/dia da semana.
   também a promoção que acabou com a pizza no carrinho). `preco_unit`,
   `subtotal` e o pedido mínimo usam o valor do servidor.
 
+## Cupons de desconto
+
+Implementado em 2026-10-13, a pedido do amigo do dono. Tela
+`/painel/cupons` (link "Cupons" no topo do painel,
+`src/components/painel/EditorCupons.tsx`): criar cupom e ligar/desligar.
+Código, valor e limite não mudam depois de criado — para mudar, desligar e
+criar outro. Sem DELETE (pedidos referenciam `cupom_id`).
+
+- Tabela `cupons` (`codigo` único em maiúsculas, `tipo` `pct`/`valor`,
+  `valor`, `pedido_minimo`, `valido_ate` (date, inclusive, horário de
+  Brasília), `max_usos`, `usos`, `ativo`). `authenticated` lê, insere e dá
+  UPDATE **só em `ativo`**. **`anon` não tem acesso nenhum** (senão daria
+  para listar os códigos) — o checkout confere o cupom por
+  `POST /api/cupons/validar`, que lê com `service_role`.
+- Lógica em `src/lib/cupom-desconto.ts` (o nome é esse porque
+  `cupom-pedido.ts` é o cupom **impresso**). `descontoDoPedido()`: cupom e
+  desconto % da loja **não somam, vale o maior**. Incide só no subtotal dos
+  itens; valor fixo nunca passa do subtotal. O pedido mínimo da loja
+  continua comparado com o subtotal antes do desconto.
+- `POST /api/pedidos` recebe `cupom` (código), confere de novo e recalcula;
+  cupom inválido/esgotado → 422 com `cupomInvalido: true` (o checkout tira o
+  cupom). O uso é reservado com `reservar_cupom(id)` (UPDATE atômico, respeita
+  `max_usos`/validade/ativo) antes de gravar e devolvido com
+  `liberar_cupom(id)` se a gravação falhar. As duas funções só têm EXECUTE
+  para `service_role`.
+- `pedidos.cupom_id`/`cupom_codigo` só são gravados quando o cupom é o que
+  ganhou. Painel e cupom impresso mostram "Cupom <código>" no desconto.
+- Limite de usos é no total, não por cliente (não há login de cliente).
+
 ## Cardápio no painel
 
 Implementado em 2026-10-09, a pedido do amigo do dono. Tela

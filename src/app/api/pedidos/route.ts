@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import { calcularDesconto } from '@/lib/promocao'
+import { descontoDoPedido, motivoCupomInvalido, normalizarCodigo } from '@/lib/cupom-desconto'
 import { calcularPrecosItens, centavos } from '@/lib/preco-pedido'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
@@ -80,10 +80,28 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Cupom conferido de novo aqui (pode ter sido desligado ou esgotado depois
+  // que o cliente aplicou). `cupomInvalido` faz o checkout tirar o cupom.
+  let cupom: { id: number; codigo: string; tipo: 'pct' | 'valor'; valor: number; pedido_minimo: number | null } | null =
+    null
+  if (typeof body.cupom === 'string' && body.cupom.trim()) {
+    const { data } = await supabaseAdmin
+      .from('cupons')
+      .select('id, codigo, tipo, valor, pedido_minimo, valido_ate, max_usos, usos, ativo')
+      .eq('codigo', normalizarCodigo(body.cupom))
+      .maybeSingle()
+    const motivo = data ? motivoCupomInvalido(data) : 'Cupom não encontrado.'
+    if (!data || motivo) {
+      return NextResponse.json({ error: `${motivo} Confira o total e finalize de novo.`, cupomInvalido: true }, { status: 422 })
+    }
+    cupom = data
+  }
+
   // Promoções valem pelo que está no banco agora, não pelo que o navegador
   // mandou. Se mudaram desde que o cliente abriu a página, recusa em vez de
   // gravar um total diferente do que ele viu.
-  const descontoAtual = calcularDesconto(subtotal, config)
+  const { valor: descontoAtual, viaCupom } = descontoDoPedido(subtotalServidor, config, cupom)
+  const cupomUsado = viaCupom ? cupom : null
   if (freteGratis && !config.frete_gratis) {
     return NextResponse.json(
       { error: 'O frete grátis foi encerrado. Recarregue a página para ver a taxa de entrega.' },
@@ -127,6 +145,21 @@ export async function POST(request: NextRequest) {
   const total = centavos(subtotalServidor - descontoAtual + taxa)
   const troco = pagamento.trocoPara?.trim() ? Number(pagamento.trocoPara.replace(',', '.')) : null
 
+  // Reserva um uso do cupom de forma atômica antes de gravar (dois pedidos
+  // ao mesmo tempo não passam do limite). Devolvido se a gravação falhar.
+  if (cupomUsado) {
+    const { data: reservou } = await supabaseAdmin.rpc('reservar_cupom', { p_id: cupomUsado.id })
+    if (!reservou) {
+      return NextResponse.json(
+        { error: 'Esse cupom acabou de esgotar. Confira o total e finalize de novo.', cupomInvalido: true },
+        { status: 422 }
+      )
+    }
+  }
+  const liberarCupom = async () => {
+    if (cupomUsado) await supabaseAdmin.rpc('liberar_cupom', { p_id: cupomUsado.id })
+  }
+
   const { data: pedido, error: pedidoError } = await supabaseAdmin
     .from('pedidos')
     .insert({
@@ -142,6 +175,8 @@ export async function POST(request: NextRequest) {
       observacao: observacao?.trim() || null,
       subtotal: subtotalServidor,
       desconto: descontoAtual,
+      cupom_id: cupomUsado?.id ?? null,
+      cupom_codigo: cupomUsado?.codigo ?? null,
       taxa_entrega: taxa,
       total,
       status: 'novo',
@@ -150,6 +185,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (pedidoError || !pedido) {
+    await liberarCupom()
     return NextResponse.json(
       { error: 'Não foi possível registrar o pedido. Tente novamente ou fale pelo WhatsApp.' },
       { status: 500 }
@@ -160,6 +196,7 @@ export async function POST(request: NextRequest) {
 
   const falhar = async (mensagem: string) => {
     await supabaseAdmin.from('pedidos').delete().eq('id', pedido.id)
+    await liberarCupom()
     return NextResponse.json({ error: mensagem }, { status: 500 })
   }
 

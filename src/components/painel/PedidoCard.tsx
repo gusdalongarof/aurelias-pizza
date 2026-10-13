@@ -95,7 +95,7 @@ export default function PedidoCard({
 
       {pedido.desconto > 0 && (
         <p className="flex justify-between text-xs text-[#526550]">
-          <span>Desconto</span>
+          <span>{pedido.cupom_codigo ? `Cupom ${pedido.cupom_codigo}` : 'Desconto'}</span>
           <span className="tabular-nums">−{brl(pedido.desconto)}</span>
         </p>
       )}

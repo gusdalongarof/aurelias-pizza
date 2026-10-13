@@ -41,6 +41,8 @@ export type Pedido = {
   observacao: string | null
   subtotal: number
   desconto: number
+  /** Cupom que gerou o desconto (null = sem cupom ou o desconto da loja era maior). */
+  cupom_codigo: string | null
   taxa_entrega: number
   total: number
   status: PedidoStatus
@@ -85,4 +87,6 @@ export type NovoPedidoPayload = {
   taxaEntrega: number
   /** O cliente viu frete grátis — o servidor recusa se a promoção já tiver acabado. */
   freteGratis: boolean
+  /** Código do cupom aplicado no checkout, se houver. */
+  cupom?: string
 }

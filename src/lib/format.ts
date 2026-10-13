@@ -10,6 +10,12 @@ export const formatDataHora = (v: string | Date) =>
     timeZone: 'America/Sao_Paulo',
   }).format(new Date(v))
 
+// Data de hoje no horário de Brasília, 'AAAA-MM-DD' (compara com colunas `date`).
+export const hojeISO = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())
+
+export const formatData = (iso: string) => iso.split('-').reverse().join('/')
+
 // '5555991473414' (DDI + DDD + número) → '(55) 99147-3414'
 export const formatTelefone = (v: string) => {
   const d = v.replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { brl, formatTelefone } from '@/lib/format'
 import IconeWhatsApp from '@/components/IconeWhatsApp'
+import { descontoDoPedido, descricaoCupom, type CupomAplicado } from '@/lib/cupom-desconto'
 import type { Bairro, FormaPagamento } from '@/types/pizzaria'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
@@ -18,7 +19,6 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
     observacao,
     setObservacao,
     subtotal,
-    desconto,
     freteGratis,
     definirTaxaEntrega,
     limparTaxaEntrega,
@@ -42,6 +42,10 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
   const [codigoPedido, setCodigoPedido] = useState<string | null>(null)
   const [totalFinal, setTotalFinal] = useState<number | null>(null)
   const [copiado, setCopiado] = useState<'codigo' | 'link' | null>(null)
+  const [cupomTexto, setCupomTexto] = useState('')
+  const [cupom, setCupom] = useState<CupomAplicado | null>(null)
+  const [cupomErro, setCupomErro] = useState<string | null>(null)
+  const [aplicandoCupom, setAplicandoCupom] = useState(false)
 
   const ehInterior = bairroSel === INTERIOR
   const bairroEscolhido = bairros.find((b) => String(b.id) === bairroSel)
@@ -49,6 +53,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
   // Taxa derivada da escolha nesta tela (não do contexto), pra não herdar
   // um bairro escolhido numa visita anterior ao checkout.
   const taxaEntrega = freteGratis ? 0 : taxaBairro
+  const { valor: desconto, viaCupom } = descontoDoPedido(subtotal, config, cupom)
   const total = subtotal > 0 ? Math.round((subtotal - desconto + (taxaEntrega ?? 0)) * 100) / 100 : 0
   const nomeBairro = ehInterior ? `Interior — ${localidade.trim()}` : (bairroEscolhido?.nome ?? '')
   const whats = config.telefone_whats?.replace(/\D/g, '')
@@ -59,6 +64,30 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
     if (valor === INTERIOR) definirTaxaEntrega(config.taxa_entrega_interior)
     else if (b) definirTaxaEntrega(b.taxa_entrega)
     else limparTaxaEntrega()
+  }
+
+  const aplicarCupom = async () => {
+    if (!cupomTexto.trim()) return
+    setCupomErro(null)
+    setAplicandoCupom(true)
+    try {
+      const resp = await fetch('/api/cupons/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: cupomTexto }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        setCupomErro(data.error || 'Cupom inválido.')
+        return
+      }
+      setCupom(data)
+      setCupomTexto('')
+    } catch {
+      setCupomErro('Falha de conexão. Tente de novo.')
+    } finally {
+      setAplicandoCupom(false)
+    }
   }
 
   // Carrinho vazio
@@ -228,6 +257,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
       desconto,
       taxaEntrega,
       freteGratis,
+      cupom: cupom?.codigo,
     }
 
     setEnviando(true)
@@ -244,6 +274,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
         if (resp.status === 409 && Array.isArray(data.precos) && data.precos.length === itens.length) {
           atualizarPrecos(data.precos)
         }
+        if (data.cupomInvalido) setCupom(null)
         setErro(data.error || 'Não foi possível registrar o pedido.')
         return
       }
@@ -439,6 +470,61 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                 ))}
               </div>
 
+              <div className="border-t border-[#1A2318] pt-4">
+                {cupom ? (
+                  <div className="rounded-xl bg-[#0E1510] border border-[#2D4230] p-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[#8AA087]">
+                        ✓ Cupom <strong className="text-[#C8D5C7]">{cupom.codigo}</strong> — {descricaoCupom(cupom)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCupom(null)}
+                        className="text-[#526550] hover:text-[#C47070] cursor-pointer"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    {cupom.pedido_minimo !== null && subtotal < cupom.pedido_minimo ? (
+                      <p className="mt-1.5 text-[#C9A24F]">
+                        Vale para pedidos a partir de {brl(cupom.pedido_minimo)} em itens.
+                      </p>
+                    ) : (
+                      !viaCupom && desconto > 0 && (
+                        <p className="mt-1.5 text-[#526550]">
+                          O desconto da loja ({config.desconto_pedido_pct}%) é maior que o do cupom — vale o maior.
+                        </p>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs text-[#4D6150] mb-1">Cupom de desconto</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={cupomTexto}
+                        onChange={(e) => setCupomTexto(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); aplicarCupom() }
+                        }}
+                        placeholder="Digite o código"
+                        className="campo uppercase"
+                      />
+                      <button
+                        type="button"
+                        onClick={aplicarCupom}
+                        disabled={aplicandoCupom || !cupomTexto.trim()}
+                        className="shrink-0 rounded-xl border border-[#2E4030] px-4 text-xs font-semibold text-[#8AA087] hover:border-[#4A6A3F] hover:text-[#C8D5C7] disabled:opacity-50 cursor-pointer"
+                      >
+                        {aplicandoCupom ? '...' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {cupomErro && <p className="mt-1.5 text-xs text-[#C47070]">{cupomErro}</p>}
+                  </div>
+                )}
+              </div>
+
               <div className="border-t border-[#1A2318] pt-4 space-y-2 text-xs text-[#4D6150]">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
@@ -446,7 +532,7 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                 </div>
                 {desconto > 0 && (
                   <div className="flex justify-between">
-                    <span>Desconto ({config.desconto_pedido_pct}%)</span>
+                    <span>{viaCupom && cupom ? `Cupom ${cupom.codigo}` : `Desconto (${config.desconto_pedido_pct}%)`}</span>
                     <span className="text-[#8AA087] tabular-nums">−{brl(desconto)}</span>
                   </div>
                 )}
