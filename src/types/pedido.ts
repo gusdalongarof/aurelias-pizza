@@ -43,6 +43,8 @@ export type Pedido = {
   desconto: number
   /** Cupom que gerou o desconto (null = sem cupom ou o desconto da loja era maior). */
   cupom_codigo: string | null
+  /** Tipo do cupom usado ('frete' = zerou a entrega em vez de dar desconto). */
+  cupons: { tipo: 'pct' | 'valor' | 'frete' } | null
   taxa_entrega: number
   total: number
   status: PedidoStatus

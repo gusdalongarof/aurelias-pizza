@@ -93,21 +93,28 @@ export default function EditorCupons({ inicial }: { inicial: Cupom[] }) {
               >
                 <option value="pct">Porcentagem (%)</option>
                 <option value="valor">Valor fixo (R$)</option>
+                <option value="frete">Frete grátis</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-[#4D6150] mb-1">
-                Desconto {form.tipo === 'pct' ? '(%)' : '(R$)'} <span className="text-[#8A5050]">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                required
-                {...campo('valor')}
-                placeholder={form.tipo === 'pct' ? '10' : '5,00'}
-                className="campo"
-              />
-            </div>
+            {form.tipo === 'frete' ? (
+              <p className="self-end pb-2 text-xs text-[#8AA087]">
+                Zera a taxa de entrega de qualquer bairro, inclusive interior.
+              </p>
+            ) : (
+              <div>
+                <label className="block text-xs text-[#4D6150] mb-1">
+                  Desconto {form.tipo === 'pct' ? '(%)' : '(R$)'} <span className="text-[#8A5050]">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  {...campo('valor')}
+                  placeholder={form.tipo === 'pct' ? '10' : '5,00'}
+                  className="campo"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs text-[#4D6150] mb-1">Pedido mínimo (R$)</label>
               <input type="text" inputMode="decimal" {...campo('pedido_minimo')} placeholder="Sem mínimo" className="campo" />
@@ -122,8 +129,9 @@ export default function EditorCupons({ inicial }: { inicial: Cupom[] }) {
             </div>
           </div>
           <p className="text-xs text-[#526550]">
-            O desconto vale só sobre os itens (não sobre a entrega). Não soma com o desconto da loja toda em
-            Promoções — o cliente fica com o maior dos dois. O limite de usos é no total, não por cliente.
+            Desconto em % ou R$ vale só sobre os itens (não sobre a entrega) e não soma com o desconto da loja
+            toda em Promoções — o cliente fica com o maior dos dois. Cupom de frete grátis soma com o desconto
+            da loja. O limite de usos é no total, não por cliente.
           </p>
           {erro && <p className="text-xs text-[#C47070]">{erro}</p>}
           <button type="submit" disabled={salvando} className="btn-primary w-auto! disabled:opacity-50">

@@ -286,6 +286,12 @@ criar outro. Sem DELETE (pedidos referenciam `cupom_id`).
 - `pedidos.cupom_id`/`cupom_codigo` só são gravados quando o cupom é o que
   ganhou. Painel e cupom impresso mostram "Cupom <código>" no desconto.
 - Limite de usos é no total, não por cliente (não há login de cliente).
+- **Cupom de frete grátis** (`tipo = 'frete'`, `valor` null — CHECK exige;
+  migration `cupom_frete_gratis`, 2026-10-13): zera a taxa de qualquer
+  bairro, inclusive interior (`cupomZeraFrete()`). Esse **soma** com o
+  desconto % da loja. Se o frete grátis da loja toda está ligado, o cupom
+  não faz diferença e não é gastado. Painel e cupom impresso mostram
+  "Entrega (cupom <código>)" — leem `cupons ( tipo )` junto do pedido.
 
 ## Cardápio no painel
 

@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import { descontoDoPedido, motivoCupomInvalido, normalizarCodigo } from '@/lib/cupom-desconto'
+import {
+  cupomZeraFrete,
+  descontoDoPedido,
+  motivoCupomInvalido,
+  normalizarCodigo,
+  type CupomAplicado,
+} from '@/lib/cupom-desconto'
 import { calcularPrecosItens, centavos } from '@/lib/preco-pedido'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
@@ -82,8 +88,7 @@ export async function POST(request: NextRequest) {
 
   // Cupom conferido de novo aqui (pode ter sido desligado ou esgotado depois
   // que o cliente aplicou). `cupomInvalido` faz o checkout tirar o cupom.
-  let cupom: { id: number; codigo: string; tipo: 'pct' | 'valor'; valor: number; pedido_minimo: number | null } | null =
-    null
+  let cupom: (CupomAplicado & { id: number }) | null = null
   if (typeof body.cupom === 'string' && body.cupom.trim()) {
     const { data } = await supabaseAdmin
       .from('cupons')
@@ -101,7 +106,9 @@ export async function POST(request: NextRequest) {
   // mandou. Se mudaram desde que o cliente abriu a página, recusa em vez de
   // gravar um total diferente do que ele viu.
   const { valor: descontoAtual, viaCupom } = descontoDoPedido(subtotalServidor, config, cupom)
-  const cupomUsado = viaCupom ? cupom : null
+  const freteViaCupom = cupomZeraFrete(subtotalServidor, config, cupom)
+  // Só gasta o cupom se ele mudou o valor do pedido.
+  const cupomUsado = viaCupom || freteViaCupom ? cupom : null
   if (freteGratis && !config.frete_gratis) {
     return NextResponse.json(
       { error: 'O frete grátis foi encerrado. Recarregue a página para ver a taxa de entrega.' },
@@ -134,7 +141,7 @@ export async function POST(request: NextRequest) {
     taxaTabela = bairro.taxa_entrega
     nomeBairro = bairro.nome
   }
-  const taxa = config.frete_gratis ? 0 : taxaTabela
+  const taxa = config.frete_gratis || freteViaCupom ? 0 : taxaTabela
   if (!config.frete_gratis && taxaEntrega !== taxa) {
     return NextResponse.json(
       { error: 'A taxa de entrega mudou. Recarregue a página para ver o valor atualizado.' },

@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { brl, formatTelefone } from '@/lib/format'
 import IconeWhatsApp from '@/components/IconeWhatsApp'
-import { descontoDoPedido, descricaoCupom, type CupomAplicado } from '@/lib/cupom-desconto'
+import {
+  atingeMinimoCupom,
+  cupomZeraFrete,
+  descontoDoPedido,
+  descricaoCupom,
+  type CupomAplicado,
+} from '@/lib/cupom-desconto'
 import type { Bairro, FormaPagamento } from '@/types/pizzaria'
 import type { NovoPedidoPayload } from '@/types/pedido'
 
@@ -52,7 +58,8 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
   const taxaBairro = ehInterior ? config.taxa_entrega_interior : (bairroEscolhido?.taxa_entrega ?? null)
   // Taxa derivada da escolha nesta tela (não do contexto), pra não herdar
   // um bairro escolhido numa visita anterior ao checkout.
-  const taxaEntrega = freteGratis ? 0 : taxaBairro
+  const freteViaCupom = cupomZeraFrete(subtotal, config, cupom)
+  const taxaEntrega = freteGratis || freteViaCupom ? 0 : taxaBairro
   const { valor: desconto, viaCupom } = descontoDoPedido(subtotal, config, cupom)
   const total = subtotal > 0 ? Math.round((subtotal - desconto + (taxaEntrega ?? 0)) * 100) / 100 : 0
   const nomeBairro = ehInterior ? `Interior — ${localidade.trim()}` : (bairroEscolhido?.nome ?? '')
@@ -485,10 +492,14 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                         Remover
                       </button>
                     </div>
-                    {cupom.pedido_minimo !== null && subtotal < cupom.pedido_minimo ? (
+                    {!atingeMinimoCupom(subtotal, cupom) ? (
                       <p className="mt-1.5 text-[#C9A24F]">
-                        Vale para pedidos a partir de {brl(cupom.pedido_minimo)} em itens.
+                        Vale para pedidos a partir de {brl(cupom.pedido_minimo ?? 0)} em itens.
                       </p>
+                    ) : cupom.tipo === 'frete' ? (
+                      freteGratis && (
+                        <p className="mt-1.5 text-[#526550]">O frete já está grátis hoje para todos.</p>
+                      )
                     ) : (
                       !viaCupom && desconto > 0 && (
                         <p className="mt-1.5 text-[#526550]">
@@ -537,9 +548,9 @@ export default function CheckoutForm({ bairros }: { bairros: Bairro[] }) {
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span>Entrega</span>
+                  <span>{freteViaCupom && cupom ? `Entrega (cupom ${cupom.codigo})` : 'Entrega'}</span>
                   <span className="text-[#8AA087] tabular-nums">
-                    {freteGratis ? 'Grátis' : taxaEntrega === null ? 'Escolha o bairro' : brl(taxaEntrega)}
+                    {freteGratis || freteViaCupom ? 'Grátis' : taxaEntrega === null ? 'Escolha o bairro' : brl(taxaEntrega)}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-[#1A2318] pt-2 text-sm font-bold text-[#E0E8DF]">

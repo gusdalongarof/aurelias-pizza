@@ -6,8 +6,9 @@ import type { Config } from '@/types/pizzaria'
 export type Cupom = {
   id: number
   codigo: string
-  tipo: 'pct' | 'valor'
-  valor: number
+  /** 'frete' zera a taxa de entrega e não tem `valor`. */
+  tipo: 'pct' | 'valor' | 'frete'
+  valor: number | null
   pedido_minimo: number | null
   /** Último dia em que vale (inclusive), 'AAAA-MM-DD' no horário de Brasília. */
   valido_ate: string | null
@@ -23,7 +24,15 @@ export type CupomAplicado = Pick<Cupom, 'codigo' | 'tipo' | 'valor' | 'pedido_mi
 export const normalizarCodigo = (v: string) => v.trim().toUpperCase()
 
 export const descricaoCupom = (c: Pick<Cupom, 'tipo' | 'valor'>) =>
-  c.tipo === 'pct' ? `${c.valor}% de desconto` : `${brl(c.valor)} de desconto`
+  c.tipo === 'frete'
+    ? 'Frete grátis'
+    : c.tipo === 'pct'
+      ? `${c.valor}% de desconto`
+      : `${brl(c.valor ?? 0)} de desconto`
+
+/** O carrinho atinge o pedido mínimo do cupom (subtotal dos itens, antes de descontos). */
+export const atingeMinimoCupom = (subtotal: number, c: Pick<Cupom, 'pedido_minimo'>) =>
+  c.pedido_minimo === null || subtotal >= c.pedido_minimo
 
 /**
  * Por que o cupom não vale agora (para o cliente), ou null se vale.
@@ -36,16 +45,26 @@ export const motivoCupomInvalido = (c: Pick<Cupom, 'ativo' | 'valido_ate' | 'max
   return null
 }
 
-/** Desconto do cupom sobre o subtotal dos itens (0 se não atingiu o mínimo do cupom). */
+/** Desconto do cupom sobre o subtotal dos itens (0 se não atingiu o mínimo ou se é de frete). */
 export const descontoCupom = (subtotal: number, c: CupomAplicado) => {
-  if (c.pedido_minimo !== null && subtotal < c.pedido_minimo) return 0
+  if (c.tipo === 'frete' || c.valor === null || !atingeMinimoCupom(subtotal, c)) return 0
   const v = c.tipo === 'pct' ? Math.round(subtotal * c.valor) / 100 : c.valor
   return Math.min(v, subtotal)
 }
 
 /**
- * Desconto que vale no pedido: cupom e desconto % da loja não se somam, vale
- * o maior. Usado no checkout e em POST /api/pedidos (recusa se divergir).
+ * Cupom de frete grátis vale neste pedido. Se o frete grátis da loja toda já
+ * está ligado, o cupom não faz diferença e não é gastado.
+ */
+export const cupomZeraFrete = (
+  subtotal: number,
+  config: Pick<Config, 'frete_gratis'>,
+  cupom: CupomAplicado | null
+) => !!cupom && cupom.tipo === 'frete' && !config.frete_gratis && atingeMinimoCupom(subtotal, cupom)
+
+/**
+ * Desconto nos itens: cupom e desconto % da loja não se somam, vale o maior.
+ * Cupom de frete não entra aqui (ver `cupomZeraFrete`) e soma com o da loja. Usado no checkout e em POST /api/pedidos (recusa se divergir).
  * `viaCupom` diz se foi o cupom que ganhou (aí o pedido grava o código).
  */
 export const descontoDoPedido = (
@@ -69,10 +88,12 @@ export const validarCupomNovo = (body: unknown): { cupom: CupomNovo } | { erro: 
   if (!/^[A-Z0-9_-]{3,30}$/.test(codigo)) {
     return { erro: 'O código precisa ter de 3 a 30 letras ou números, sem espaço nem acento.' }
   }
-  if (b.tipo !== 'pct' && b.tipo !== 'valor') return { erro: 'Escolha o tipo do desconto.' }
-  const valor = Number(b.valor)
-  if (!Number.isFinite(valor) || valor <= 0) return { erro: 'Informe o valor do desconto.' }
-  if (b.tipo === 'pct' && valor >= 100) return { erro: 'O desconto em % precisa ser menor que 100.' }
+  if (b.tipo !== 'pct' && b.tipo !== 'valor' && b.tipo !== 'frete') return { erro: 'Escolha o tipo do desconto.' }
+  const valor = b.tipo === 'frete' ? null : Number(b.valor)
+  if (valor !== null && (!Number.isFinite(valor) || valor <= 0)) return { erro: 'Informe o valor do desconto.' }
+  if (b.tipo === 'pct' && valor !== null && valor >= 100) {
+    return { erro: 'O desconto em % precisa ser menor que 100.' }
+  }
 
   const pedidoMinimo = numeroOpcional(b.pedido_minimo)
   if (pedidoMinimo !== null && (!Number.isFinite(pedidoMinimo) || pedidoMinimo <= 0)) {
@@ -91,7 +112,7 @@ export const validarCupomNovo = (body: unknown): { cupom: CupomNovo } | { erro: 
     cupom: {
       codigo,
       tipo: b.tipo,
-      valor: Math.round(valor * 100) / 100,
+      valor: valor !== null ? Math.round(valor * 100) / 100 : null,
       pedido_minimo: pedidoMinimo !== null ? Math.round(pedidoMinimo * 100) / 100 : null,
       valido_ate: validoAte,
       max_usos: maxUsos,

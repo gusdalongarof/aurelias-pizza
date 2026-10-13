@@ -95,8 +95,15 @@ export default function PedidoCard({
 
       {pedido.desconto > 0 && (
         <p className="flex justify-between text-xs text-[#526550]">
-          <span>{pedido.cupom_codigo ? `Cupom ${pedido.cupom_codigo}` : 'Desconto'}</span>
+          <span>{pedido.cupom_codigo && pedido.cupons?.tipo !== 'frete' ? `Cupom ${pedido.cupom_codigo}` : 'Desconto'}</span>
           <span className="tabular-nums">−{brl(pedido.desconto)}</span>
+        </p>
+      )}
+
+      {pedido.cupons?.tipo === 'frete' && (
+        <p className="flex justify-between text-xs text-[#526550]">
+          <span>Entrega (cupom {pedido.cupom_codigo})</span>
+          <span>Grátis</span>
         </p>
       )}
 

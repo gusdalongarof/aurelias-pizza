@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     codigo: cupom.codigo,
     tipo: cupom.tipo,
-    valor: Number(cupom.valor),
+    valor: cupom.valor === null ? null : Number(cupom.valor),
     pedido_minimo: cupom.pedido_minimo === null ? null : Number(cupom.pedido_minimo),
   })
 }
