@@ -15,7 +15,8 @@ interface MontadorPizzaProps {
 export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPizzaProps) {
   const { adicionarPizza, abrirCarrinho } = useCart()
 
-  const [tamanhoId, setTamanhoId] = useState<number>(tamanhos[0]?.id ?? 0)
+  const disponiveis = tamanhos.filter((t) => !t.vendas_pausadas)
+  const [tamanhoId, setTamanhoId] = useState<number>(disponiveis[0]?.id ?? tamanhos[0]?.id ?? 0)
   const [saboresIds, setSaboresIds] = useState<number[]>([])
   const [bordaId, setBordaId] = useState<number>(bordas[0]?.id ?? 0)
   const [filtroCategoria, setFiltroCategoria] = useState<'todas' | 'salgada' | 'doce'>('todas')
@@ -71,7 +72,7 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
   )
 
   const handleAdicionar = () => {
-    if (!saboresSelecionados.length) return
+    if (!saboresSelecionados.length || tamanhoAtual.vendas_pausadas) return
     adicionarPizza({ tamanho: tamanhoAtual, sabores: saboresSelecionados, borda: bordaAtual, precoUnitario: precoTotal })
     setSaboresIds([])
     setAdicionado(true)
@@ -91,17 +92,20 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
         <p className="text-xs font-semibold text-[#8AA087] uppercase tracking-widest mb-3">Tamanho</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {tamanhos.map((t) => {
-            const sel = t.id === tamanhoId
+            const sel = t.id === tamanhoId && !t.vendas_pausadas
             return (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => handleTamanho(t.id)}
+                disabled={t.vendas_pausadas}
                 aria-pressed={sel}
-                className={`relative rounded-xl p-3.5 text-left border-2 cursor-pointer transition-colors ${
-                  sel
-                    ? 'border-[#C9A24F] bg-[#2A2414] shadow-[0_0_0_3px_rgba(201,162,79,0.18)]'
-                    : 'border-[#1C2920] bg-[#111813] hover:border-[#2E4030]'
+                className={`relative rounded-xl p-3.5 text-left border-2 transition-colors ${
+                  t.vendas_pausadas
+                    ? 'border-[#1C2920] bg-[#0E1310] opacity-50 cursor-not-allowed'
+                    : sel
+                      ? 'border-[#C9A24F] bg-[#2A2414] shadow-[0_0_0_3px_rgba(201,162,79,0.18)] cursor-pointer'
+                      : 'border-[#1C2920] bg-[#111813] hover:border-[#2E4030] cursor-pointer'
                 }`}
               >
                 {sel && (
@@ -111,7 +115,9 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
                 )}
                 <div className={`font-semibold text-sm ${sel ? 'text-[#F2DDA4]' : 'text-[#E0E8DF]'}`}>{t.nome}</div>
                 <div className={`mt-0.5 text-[11px] ${sel ? 'text-[#B89A5A]' : 'text-[#526550]'}`}>
-                  {t.fatias ? `${t.fatias} fatias` : 'Broto'} · máx. {t.max_sabores} sabor{t.max_sabores > 1 ? 'es' : ''}
+                  {t.vendas_pausadas
+                    ? 'Indisponível hoje'
+                    : `${t.fatias ? `${t.fatias} fatias` : 'Broto'} · máx. ${t.max_sabores} sabor${t.max_sabores > 1 ? 'es' : ''}`}
                 </div>
               </button>
             )
@@ -263,11 +269,15 @@ export default function MontadorPizza({ tamanhos, sabores, bordas }: MontadorPiz
         <div className="mt-4 flex gap-2">
           <button
             type="button"
-            disabled={saboresSelecionados.length === 0}
+            disabled={saboresSelecionados.length === 0 || tamanhoAtual.vendas_pausadas}
             onClick={handleAdicionar}
             className="btn-primary flex-1"
           >
-            {saboresSelecionados.length === 0 ? 'Selecione o sabor' : `Adicionar ao pedido — ${brl(precoTotal)}`}
+            {tamanhoAtual.vendas_pausadas
+              ? 'Nenhum tamanho disponível no momento'
+              : saboresSelecionados.length === 0
+                ? 'Selecione o sabor'
+                : `Adicionar ao pedido — ${brl(precoTotal)}`}
           </button>
 
           {saboresSelecionados.length > 0 && (

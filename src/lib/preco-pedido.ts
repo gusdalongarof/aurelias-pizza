@@ -61,7 +61,7 @@ export async function calcularPrecosItens(
 
   const vazio = { data: [], error: null }
   const [tamanhosRes, bordasRes, saboresRes, bebidasRes] = await Promise.all([
-    tamanhoIds.length ? supabase.from('tamanhos').select('id, max_sabores').in('id', tamanhoIds) : vazio,
+    tamanhoIds.length ? supabase.from('tamanhos').select('id, nome, max_sabores, vendas_pausadas').in('id', tamanhoIds) : vazio,
     bordaIds.length ? supabase.from('bordas').select('id, preco_extra').in('id', bordaIds) : vazio,
     saborIds.length
       ? supabase.from('sabores').select('id, sabor_preco(tamanho_id, preco, preco_promo)').in('id', saborIds)
@@ -73,7 +73,12 @@ export async function calcularPrecosItens(
     return { ok: false, status: 500, error: 'Não foi possível validar o pedido. Tente novamente.' }
   }
 
-  const tamanhos = new Map((tamanhosRes.data as { id: number; max_sabores: number }[]).map((t) => [t.id, t]))
+  const tamanhos = new Map(
+    (tamanhosRes.data as { id: number; nome: string; max_sabores: number; vendas_pausadas: boolean }[]).map((t) => [
+      t.id,
+      t,
+    ])
+  )
   const bordas = new Map((bordasRes.data as { id: number; preco_extra: number }[]).map((b) => [b.id, b]))
   const sabores = new Map(
     (saboresRes.data as { id: number; sabor_preco: SaborPreco[] }[]).map((s) => [s.id, s])
@@ -92,6 +97,13 @@ export async function calcularPrecosItens(
     const tamanho = tamanhos.get(item.tamanhoId)
     const borda = bordas.get(item.bordaId)
     if (!tamanho || !borda) return indisponivel
+    if (tamanho.vendas_pausadas) {
+      return {
+        ok: false,
+        status: 422,
+        error: `A pizza ${tamanho.nome} não está sendo vendida no momento. Remova-a do carrinho e tente de novo.`,
+      }
+    }
     if (item.saborIds.length > tamanho.max_sabores) return invalido('Pizza com sabores demais para o tamanho.')
 
     let soma = 0

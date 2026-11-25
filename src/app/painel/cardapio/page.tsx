@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import EditorCardapio, { type SaborPainel } from '@/components/painel/EditorCardapio'
+import PausaTamanhos from '@/components/painel/PausaTamanhos'
 import type { Tamanho } from '@/types/pizzaria'
 
 export const dynamic = 'force-dynamic'
@@ -46,10 +47,13 @@ export default async function CardapioPainelPage() {
         {erro ? (
           <p className="text-sm text-[#C47070]">Não foi possível carregar o cardápio.</p>
         ) : (
-          <EditorCardapio
-            tamanhos={(tamanhosRes.data ?? []) as Tamanho[]}
-            sabores={(saboresRes.data ?? []) as SaborPainel[]}
-          />
+          <div className="space-y-10">
+            <PausaTamanhos tamanhos={(tamanhosRes.data ?? []) as Tamanho[]} />
+            <EditorCardapio
+              tamanhos={(tamanhosRes.data ?? []) as Tamanho[]}
+              sabores={(saboresRes.data ?? []) as SaborPainel[]}
+            />
+          </div>
         )}
       </div>
     </main>

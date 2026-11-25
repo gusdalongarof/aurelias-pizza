@@ -4,6 +4,8 @@ export type Tamanho = {
   fatias: number | null
   max_sabores: number
   ordem: number
+  /** Pausado no painel: continua no cardápio, mas não pode ser pedido. */
+  vendas_pausadas: boolean
 }
 
 export type SaborPreco = {

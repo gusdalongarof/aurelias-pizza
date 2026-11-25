@@ -83,6 +83,8 @@ Está ativo em todas as tabelas.
   `preco`** (grant por coluna + policy `painel_atualiza_preco_promo`) e
   INSERT (policy `painel_cria_sabor_preco`). `preco` ganhou UPDATE em
   2026-10-09 (migration `painel_edita_sabores`), ver "Cardápio no painel".
+- `tamanhos`: `authenticated` dá UPDATE só em `vendas_pausadas` (policy
+  `painel_pausa_tamanho`, 2026-11-25); `anon` sem UPDATE.
 - `sabores`: desde 2026-10-09 `authenticated` lê todos (inclusive
   `ativo = false`, policy `painel_le_sabores`), insere, e dá UPDATE só em
   `nome`, `descricao`, `categoria`, `ativo`. Sem DELETE (pedidos antigos
@@ -311,6 +313,15 @@ pelo banco.
   os preços novos; sabor desativado → 422.
 - `/painel/promocoes` filtra `ativo = true` (pela sessão o painel enxerga os
   desativados).
+- **Pausar tamanho** (2026-11-25, a pedido do Gustavo — "promoção de
+  brotinhos, pausar as casais"): bloco "Tamanhos" no topo de
+  `/painel/cardapio` (`PausaTamanhos.tsx` → `PATCH /api/tamanhos/[id]`).
+  Coluna `tamanhos.vendas_pausadas` (migration `painel_pausa_tamanho`);
+  `authenticated` dá UPDATE **só nela**. Não usar `tamanhos.ativo` para
+  isso: o RLS esconderia o tamanho também dos pedidos antigos no painel.
+  Pausado, o montador mostra o botão desativado ("Indisponível hoje"), o
+  cardápio de consulta marca "indisponível" na coluna e
+  `calcularPrecosItens()` recusa com 422 (carrinho antigo).
 
 ## Impressão de cupom
 

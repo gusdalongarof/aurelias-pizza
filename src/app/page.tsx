@@ -30,7 +30,12 @@ function ListaSabores({
         </h3>
         <div className="flex gap-5 sm:gap-8 text-[10px] font-semibold text-[#354136] uppercase tracking-widest">
           {tamanhos.map((t) => (
-            <span key={t.id} className="w-14 sm:w-20 text-right">{t.nome}</span>
+            <span key={t.id} className="w-14 sm:w-20 text-right">
+              {t.nome}
+              {t.vendas_pausadas && (
+                <span className="block normal-case tracking-normal font-normal text-[#8A5A50]">indisponível</span>
+              )}
+            </span>
           ))}
         </div>
       </div>
